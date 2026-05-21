@@ -1,7 +1,99 @@
-<a class="card-link" href="./pages/new-page.html">
-  <div class="card-top">
-    <h2 class="card-title">New Page</h2>
-    <span class="chip">HTML</span>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project List</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 32px 16px;
+      background: #f7f6f2;
+      color: #28251d;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin-bottom: 12px;
+    }
+
+    p {
+      color: #666;
+    }
+
+    .list {
+      display: grid;
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .item {
+      display: block;
+      padding: 20px;
+      background: #ffffff;
+      border: 1px solid #d4d1ca;
+      border-radius: 12px;
+      text-decoration: none;
+      color: inherit;
+      transition: 0.2s ease;
+    }
+
+    .item:hover {
+      border-color: #01696f;
+      transform: translateY(-2px);
+    }
+
+    .item h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    .item p {
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>My Pages</h1>
+    <p>Tap any item to open another HTML file in this repository.</p>
+
+    <div class="list">
+      <a class="item" href="./pages/page-one.html">
+        <h2>Page One</h2>
+        <p>Open page-one.html</p>
+      </a>
+
+      <a class="item" href="./pages/page-two.html">
+        <h2>Page Two</h2>
+        <p>Open page-two.html</p>
+      </a>
+
+      <a class="item" href="./pages/page-three.html">
+        <h2>Page Three</h2>
+        <p>Open page-three.html</p>
+      </a>
+
+      <a class="item" href="./pages/page-four.html">
+        <h2>Page Four</h2>
+        <p>Open page-four.html</p>
+      </a>
+
+      <a class="item" href="./pages/page-five.html">
+        <h2>Page Five</h2>
+        <p>Open page-five.html</p>
+      </a>
+
+      <a class="item" href="./pages/page-six.html">
+        <h2>Page Six</h2>
+        <p>Open page-six.html</p>
+      </a>
+    </div>
   </div>
-  <p>Opens <code>pages/new-page.html</code>.</p>
-</a>
+</body>
+</html>
