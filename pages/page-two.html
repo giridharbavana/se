@@ -1,986 +1,633 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Archive</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          parchment: '#FAF7F0',
-          ink: '#1C1712',
-          ember: '#BF4A1C',
-          muted: '#7A6F62',
-          line: '#E6DFD2',
-        },
-        fontFamily: {
-          display: ['"Playfair Display"', 'serif'],
-          body: ['"DM Sans"', 'sans-serif'],
-          mono: ['"DM Mono"', 'monospace'],
-        },
-      },
-    },
-  };
-</script>
+<meta charset="UTF-8">
+<title>Performance Metrics — Per-Metric Camera Comparison</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-  html, body, #root { height: 100%; }
-  body {
-    background: #FAF7F0;
-    color: #1C1712;
-    font-family: 'DM Sans', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+  :root {
+    --bg: #0f1320;
+    --panel: #161b2e;
+    --panel-2: #1d2340;
+    --ink: #e9ecf6;
+    --muted: #9aa3c2;
+    --line: #2a3155;
+    --pass: #2ecc71;
+    --partial: #f5b14a;
+    --fail: #ef5350;
+    --na: #5a6383;
+    --accent: #5b8def;
+    --nb: #ffd400;
+    --onb: #5b8def;
+    --pair: #b46cff;
+    --view: #2ecc71;
+    --verify: #ffd400;
   }
-  .font-display { font-family: 'Playfair Display', serif; }
-  .font-body { font-family: 'DM Sans', sans-serif; }
-  .font-mono { font-family: 'DM Mono', monospace; }
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-thumb { background: #E6DFD2; border-radius: 6px; }
-  ::-webkit-scrollbar-thumb:hover { background: #d6cdb9; }
-  /* Hide spinner on number inputs (not used but tidy) */
-  textarea { resize: none; }
-  /* Subtle fade for overlays */
-  .fade-in { animation: fadeIn 160ms ease-out; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    background: linear-gradient(180deg, #0b0f1c 0%, #0f1320 100%);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    line-height: 1.3;
+  }
+  header { border-bottom: 2px solid var(--line); padding-bottom: 12px; margin-bottom: 18px; }
+  header .badge {
+    display: inline-block; padding: 3px 9px; border-radius: 999px;
+    background: var(--nb); color: #1a1a1a; font-weight: 700; font-size: 10px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  header h1 { margin: 6px 0 2px; font-size: 22px; letter-spacing: -0.01em; }
+  header .sub { color: var(--muted); font-size: 12px; }
+  .kpi-row { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 18px; }
+  .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+  .kpi .lbl { font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+  .kpi .val { font-size: 22px; font-weight: 700; color: var(--ink); margin-top: 2px; line-height: 1.1; }
+  .kpi .val.sm { font-size: 14px; }
+  .kpi .val.pass { color: var(--pass); } .kpi .val.fail { color: var(--fail); } .kpi .val.partial { color: var(--partial); }
+  .section-head {
+    margin: 24px 0 12px; padding: 8px 14px; border-radius: 10px;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--panel); border: 1px solid var(--line);
+  }
+  .section-head .tag {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 8px; color: white; font-weight: 700; font-size: 13px;
+  }
+  .section-head .t1 { background: var(--onb); }
+  .section-head .t2 { background: var(--pair); }
+  .section-head .t3 { background: var(--view); color: #0f1320; }
+  .section-head .t4 { background: var(--verify); color: #1a1a1a; }
+  .section-head h2 { margin: 0; font-size: 15px; font-weight: 600; flex: 1; }
+  .section-head .meta { font-size: 11px; color: var(--muted); }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(2, 1fr); }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; display: flex; flex-direction: column;
+  }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .card-head .title { font-size: 13px; font-weight: 600; color: var(--ink); flex: 1; }
+  .card-head .target { font-size: 11px; color: var(--muted); text-align: right; white-space: nowrap; max-width: 200px; }
+  .card-head .target b { color: var(--ink); display: block; }
+  .summary { display: flex; gap: 6px; font-size: 10.5px; color: var(--muted); margin-bottom: 8px; flex-wrap: wrap; }
+  .summary .pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px;
+    border-radius: 999px; background: rgba(255,255,255,.03); }
+  .summary .pill .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .summary .pill.pass .dot { background: var(--pass); } .summary .pill.pass { color: var(--pass); }
+  .summary .pill.partial .dot { background: var(--partial); } .summary .pill.partial { color: var(--partial); }
+  .summary .pill.fail .dot { background: var(--fail); } .summary .pill.fail { color: var(--fail); }
+  .summary .pill.na .dot { background: var(--na); } .summary .pill.na { color: var(--na); }
+  .chart-wrap { position: relative; height: 220px; }
+  .status-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .status-cell { padding: 9px 5px; border-radius: 6px; text-align: center; font-size: 10px;
+    background: rgba(90,99,131,.10); border: 1px solid var(--line); }
+  .status-cell .cam { display: block; font-size: 9px; color: var(--muted); margin-bottom: 4px; font-weight: 600; line-height: 1.1; }
+  .status-cell .v { font-size: 10.5px; font-weight: 600; color: var(--ink); }
+  .status-cell.pass { background: rgba(46,204,113,.12); border-color: rgba(46,204,113,.25); }
+  .status-cell.pass .v { color: var(--pass); }
+  .status-cell.partial { background: rgba(245,177,74,.12); border-color: rgba(245,177,74,.25); }
+  .status-cell.partial .v { color: var(--partial); }
+  .status-cell.fail { background: rgba(239,83,80,.12); border-color: rgba(239,83,80,.25); }
+  .status-cell.fail .v { color: var(--fail); }
+  .status-cell.na { background: rgba(90,99,131,.10); }
+  .status-cell.na .v { color: var(--na); }
+  footer { color: var(--muted); font-size: 11px; margin-top: 22px;
+    border-top: 1px solid var(--line); padding-top: 10px; }
 </style>
-<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
-<div id="root"></div>
 
-<script type="text/babel" data-presets="react">
-const { useState, useEffect, useRef, useCallback, useMemo } = React;
+<header>
+  <span class="badge">Nextbase · Performance Metrics Tab</span>
+  <h1>Per-Metric Camera Comparison — All 7 Cameras, All Metrics</h1>
+  <div class="sub">Source: <em>Competitor Performance Metrics v1.0-2.xlsx</em> · Sheet: <em>Performance Metrics</em> · 4 user-testing areas</div>
+</header>
 
-// ───────────────────────────────────────────────────────────────────────────
-// SUPABASE CONFIG (optional)
-// Fill these in to enable background sync. Leave blank to run localStorage-only.
-// Schema expected: table `kv_store` with columns `key` (text, pk) and `value` (jsonb or text).
-// RLS must allow anon select/insert/update/delete on kv_store (or use a service key in a backend).
-// ───────────────────────────────────────────────────────────────────────────
-const SUPABASE_URL = ""; // e.g. "https://xxxx.supabase.co"
-const SUPABASE_ANON_KEY = ""; // e.g. "eyJhbGciOi..."
-const SUPABASE_ENABLED = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+<div class="kpi-row">
+  <div class="kpi"><div class="lbl">Cameras</div><div class="val">7</div></div>
+  <div class="kpi"><div class="lbl">Metrics shown</div><div class="val">29</div></div>
+  <div class="kpi"><div class="lbl">Onboarding</div><div class="val sm" style="color:var(--onb)">8 metrics</div></div>
+  <div class="kpi"><div class="lbl">Pairing</div><div class="val sm" style="color:var(--pair)">5 metrics</div></div>
+  <div class="kpi"><div class="lbl">Viewing Recording</div><div class="val sm" style="color:var(--view)">13 metrics</div></div>
+  <div class="kpi"><div class="lbl">Verify Recording</div><div class="val sm" style="color:var(--verify)">3 metrics</div></div>
+</div>
 
-// ───────────────────────────────────────────────────────────────────────────
-// Persistence layer
-// ───────────────────────────────────────────────────────────────────────────
-const LS = {
-  CONFIG: 'archive:config',
-  ITEM_IDS: 'archive:item-ids',
-  ITEM: (id) => `archive:item:${id}`,
-  DELETED_SEEDS: 'archive:deleted-seed-ids',
-};
+<div id="report"></div>
 
-function lsGet(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw === null || raw === undefined) return fallback;
-    return JSON.parse(raw);
-  } catch {
-    return fallback;
-  }
-}
-function lsSet(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
-}
-function lsDel(key) {
-  try { localStorage.removeItem(key); } catch {}
-}
+<footer>
+  Cameras: 70Mai T800 (front/cabin/rear) · 70Mai 4K A800SE · Road Angel Halo Pro 2K F/R · Road Angel Ignite · Road Angel Ignite 2 · Road Angel HALO Guardian · Road Angel HALO Spark Dual.
+  SE-class (Rexing, Viofo, SE 1K/4K) and PLUS-class (Milo3/5/6) columns are empty in source and excluded.
+  Cells shown as "—" or "Not tested" indicate the source cell was blank or "--".
+</footer>
 
-// Supabase REST helpers — fire and forget for writes, awaited for initial read.
-async function sbGet(key) {
-  if (!SUPABASE_ENABLED) return null;
-  try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/kv_store?key=eq.${encodeURIComponent(key)}&select=value`, {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-    });
-    if (!r.ok) return null;
-    const rows = await r.json();
-    if (!rows || !rows.length) return null;
-    const v = rows[0].value;
-    if (typeof v === 'string') {
-      try { return JSON.parse(v); } catch { return v; }
-    }
-    return v;
-  } catch {
-    return null;
-  }
-}
-async function sbGetAllItems() {
-  if (!SUPABASE_ENABLED) return [];
-  try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/kv_store?key=like.archive:item:*&select=key,value`, {
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      },
-    });
-    if (!r.ok) return [];
-    const rows = await r.json();
-    return (rows || []).map((row) => {
-      const v = row.value;
-      if (typeof v === 'string') { try { return JSON.parse(v); } catch { return null; } }
-      return v;
-    }).filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-function sbUpsert(key, value) {
-  if (!SUPABASE_ENABLED) return;
-  fetch(`${SUPABASE_URL}/rest/v1/kv_store`, {
-    method: 'POST',
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'resolution=merge-duplicates',
-    },
-    body: JSON.stringify({ key, value }),
-  }).catch(() => {});
-}
-function sbDelete(key) {
-  if (!SUPABASE_ENABLED) return;
-  fetch(`${SUPABASE_URL}/rest/v1/kv_store?key=eq.${encodeURIComponent(key)}`, {
-    method: 'DELETE',
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-    },
-  }).catch(() => {});
-}
+<script>
+const PASS = '#2ecc71', PARTIAL = '#f5b14a', FAIL = '#ef5350', NA = '#5a6383';
+const LINE = '#2a3155';
+Chart.defaults.color = '#9aa3c2';
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, Segoe UI, Inter, Roboto, sans-serif';
+Chart.defaults.font.size = 10;
 
-// ───────────────────────────────────────────────────────────────────────────
-// Defaults + seeds
-// ───────────────────────────────────────────────────────────────────────────
-const DEFAULT_CONFIG = {
-  pageTitle: 'Archive',
-  tabs: [], // [{ id, name }]
-};
+// 7 cameras in fixed order matching source columns
+const cameras = ['70Mai T800', '70Mai A800SE', 'Halo Pro 2K', 'RA Ignite', 'RA Ignite 2', 'HALO Guardian', 'HALO Spark Dual'];
 
-const SEEDS = [
+// Order per source: T800, Halo Pro 2K, A800SE, Ignite, Ignite2, Guardian, Spark
+// But I'll keep my display order above (T800, A800SE, Halo Pro 2K, ...) and remap manually.
+
+// For each metric, data array length = 7 in the cameras[] order above.
+
+const sections = [
   {
-    id: 'seed-reading-list',
-    type: 'table',
-    title: 'Reading list',
-    description: 'Articles and books worth returning to.',
-    tabId: 'all',
-    createdAt: 0,
-    isSeed: true,
-    data: {
-      columns: [
-        { id: 'c1', label: 'Title' },
-        { id: 'c2', label: 'Author' },
-        { id: 'c3', label: 'Status' },
-        { id: 'c4', label: 'Notes' },
-      ],
-      rows: [
-        ['The Tyranny of Metrics', 'Jerry Z. Muller', 'Reading', 'On measurement and its discontents.'],
-        ['Designing Data-Intensive Applications', 'Martin Kleppmann', 'Queued', ''],
-        ['On Writing Well', 'William Zinsser', 'Done', 'Clarity over cleverness.'],
-      ],
-    },
+    id: 1, label: 'Onboarding', cls: 't1', cssVar: '--onb',
+    metrics: [
+      {
+        title: 'App launch — hot (background → foreground)',
+        target: '< 100ms',
+        mode: 'status',
+        data: [
+          { d: 'instant', s: 'pass' },
+          { d: 'instant', s: 'pass' },
+          { d: 'instant', s: 'pass' },
+          { d: 'instant', s: 'pass' },
+          { d: 'instant', s: 'pass' },
+          { d: 'instant', s: 'pass' },
+          { d: 'instant', s: 'pass' }
+        ]
+      },
+      {
+        title: 'App launch — cold (first open after swipe-away)',
+        target: '≤ 3s',
+        mode: 'bar', unit: 's', yMax: 4, targetLine: 3,
+        data: [
+          { v: 2.622, d: 'iOS 2.622s', s: 'pass' },
+          { v: 2.622, d: 'iOS 2.622s', s: 'pass' },
+          { v: 0.05, d: 'instant', s: 'pass' },
+          { v: 0.05, d: 'instant', s: 'pass' },
+          { v: 0.05, d: 'instant', s: 'pass' },
+          { v: 0.05, d: 'instant', s: 'pass' },
+          { v: 0.05, d: 'instant', s: 'pass' }
+        ]
+      },
+      {
+        title: 'Number-plate legibility — clear conditions (100mph)',
+        target: '≥ 95% legible',
+        mode: 'status',
+        data: [
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' },
+          { d: '20% F / 0% R', s: 'fail' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' }
+        ]
+      },
+      {
+        title: 'Number-plate legibility — inclement conditions (60mph)',
+        target: '≥ 75% legible',
+        mode: 'status',
+        data: [
+          { d: '—', s: 'na' },
+          { d: '54% F / —', s: 'partial' },
+          { d: '54% F / 0% R', s: 'fail' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' }
+        ]
+      },
+      {
+        title: 'Traffic management infrastructure capture',
+        target: 'Signal 100% · Reg signs 99% · Info 95% · Markings 99%',
+        mode: 'status',
+        data: [
+          { d: '—', s: 'na' },
+          { d: '100% across', s: 'pass' },
+          { d: '100% across', s: 'pass' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' }
+        ]
+      },
+      {
+        title: 'Person recognition within 3m of vehicle',
+        target: '≤ 5 mph all visible features recognisable',
+        mode: 'status',
+        data: [
+          { d: '100% faces', s: 'pass' },
+          { d: '100% faces', s: 'pass' },
+          { d: '100% faces', s: 'pass' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' }
+        ]
+      },
+      {
+        title: 'Image quality parameters applied to first frame',
+        target: 'Pass on first frame',
+        mode: 'status',
+        data: [
+          { d: '—', s: 'na' },
+          { d: 'Pass', s: 'pass' },
+          { d: 'Pass', s: 'pass' },
+          { d: 'Fail', s: 'fail' },
+          { d: 'Fail', s: 'fail' },
+          { d: 'Pass', s: 'pass' },
+          { d: '—', s: 'na' }
+        ]
+      },
+      {
+        title: 'Recording frame rate',
+        target: '30 unique fps per stream',
+        mode: 'bar', unit: ' fps', yMax: 35, targetLine: 30,
+        data: [
+          { v: 30, d: '30 fps', s: 'pass' },
+          { v: 30, d: '30 fps', s: 'pass' },
+          { v: 25, d: '25 fps', s: 'fail' },
+          { v: 30, d: '30 fps', s: 'pass' },
+          { v: 30, d: '30 fps', s: 'pass' },
+          { v: 24, d: '30 F / 24 R', s: 'partial' },
+          { v: 30, d: '30 fps', s: 'pass' }
+        ]
+      }
+    ]
   },
   {
-    id: 'seed-team-notes',
-    type: 'table',
-    title: 'Team rituals',
-    description: 'Recurring practices and what they are for.',
-    tabId: 'all',
-    createdAt: 0,
-    isSeed: true,
-    data: {
-      columns: [
-        { id: 'c1', label: 'Ritual' },
-        { id: 'c2', label: 'Cadence' },
-        { id: 'c3', label: 'Purpose' },
-      ],
-      rows: [
-        ['Weekly review', 'Friday', 'Reflect and reset priorities.'],
-        ['Async standup', 'Daily', 'Surface blockers without a meeting.'],
-        ['Show & tell', 'Bi-weekly', 'Share works in progress.'],
-      ],
-    },
+    id: 2, label: 'Pairing with App', cls: 't2', cssVar: '--pair',
+    metrics: [
+      {
+        title: 'Pairing time',
+        target: '< 60s',
+        mode: 'bar', unit: 's', yMax: 120, targetLine: 60,
+        data: [
+          { v: 14, d: '14s', s: 'pass' },
+          { v: 14, d: '14s', s: 'pass' },
+          { v: null, d: '—', s: 'na' },
+          { v: 104, d: '1m 44s', s: 'fail' },
+          { v: 104, d: '1m 44s', s: 'fail' },
+          { v: 104, d: '1m 44s', s: 'fail' },
+          { v: 104, d: '1m 44s', s: 'fail' }
+        ]
+      },
+      {
+        title: 'Reconnect when returning to vehicle — APP terminated',
+        target: 'Locked / unlocked < 20s',
+        mode: 'status',
+        data: [
+          { d: '—', s: 'na' }, { d: '—', s: 'na' }, { d: '—', s: 'na' },
+          { d: '—', s: 'na' }, { d: '—', s: 'na' }, { d: '—', s: 'na' },
+          { d: '—', s: 'na' }
+        ]
+      },
+      {
+        title: 'App recognises connection after OS reconnects',
+        target: '≤ 1s',
+        mode: 'status',
+        data: [
+          { d: '1s', s: 'pass' },
+          { d: '1s', s: 'pass' },
+          { d: '—', s: 'na' },
+          { d: '1s', s: 'pass' },
+          { d: '1s', s: 'pass' },
+          { d: '1s', s: 'pass' },
+          { d: '1s', s: 'pass' }
+        ]
+      },
+      {
+        title: 'Reconnect when out of range — APP background suspended',
+        target: 'Locked / unlocked < 20s',
+        mode: 'status',
+        data: [
+          { d: '—', s: 'na' }, { d: '—', s: 'na' }, { d: '—', s: 'na' },
+          { d: '—', s: 'na' }, { d: '—', s: 'na' }, { d: '—', s: 'na' },
+          { d: '—', s: 'na' }
+        ]
+      },
+      {
+        title: 'Reconnect when returning to vehicle — APP background suspended',
+        target: 'Locked / unlocked < 20s',
+        mode: 'status',
+        data: [
+          { d: '—', s: 'na' }, { d: '—', s: 'na' }, { d: '—', s: 'na' },
+          { d: '—', s: 'na' }, { d: '—', s: 'na' }, { d: '—', s: 'na' },
+          { d: '—', s: 'na' }
+        ]
+      }
+    ]
   },
+  {
+    id: 3, label: 'Viewing Recording footage', cls: 't3', cssVar: '--view',
+    metrics: [
+      {
+        title: 'Time to first frame — warm',
+        target: '≤ 1s',
+        mode: 'bar', unit: 's', yMax: 10, targetLine: 1,
+        data: [
+          { v: 1.753, d: '1.753s (front)', s: 'partial' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: 'TBC', s: 'na' },
+          { v: 7, d: '7s (front)', s: 'fail' },
+          { v: 8.5, d: '8.5s F/R', s: 'fail' },
+          { v: null, d: 'Fail', s: 'fail' }
+        ]
+      },
+      {
+        title: 'Time to first frame — cold',
+        target: '≤ 1s',
+        mode: 'bar', unit: 's', yMax: 22, targetLine: 1,
+        data: [
+          { v: 19.319, d: 'cabin 19.4s · front 19.3s · rear 19.7s', s: 'fail' },
+          { v: 15.060, d: '15.06s front', s: 'fail' },
+          { v: 7.354, d: '7.35s F / 7.41s R', s: 'fail' },
+          { v: 7.12, d: '7.12s front', s: 'fail' },
+          { v: 8.4, d: '8.4s front', s: 'fail' },
+          { v: 9.34, d: '9.34s F/R', s: 'fail' },
+          { v: 9.2, d: '9.2s F/R', s: 'fail' }
+        ]
+      },
+      {
+        title: 'Cross-stream sync (front ↔ rear / cabin)',
+        target: '≤ 33ms (1 frame at 30fps)',
+        mode: 'bar', unit: 'ms', yMax: 450, targetLine: 33,
+        data: [
+          { v: 412, d: 'first 54ms F-C · 412ms F-R; last 59ms F-C · 293ms F-R', s: 'fail' },
+          { v: null, d: '—', s: 'na' },
+          { v: 59, d: '58ms first / 59ms last F-R', s: 'partial' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' },
+          { v: 0, d: '0ms F-R first & last', s: 'pass' },
+          { v: 0, d: '0ms F-R first & last', s: 'pass' }
+        ]
+      },
+      {
+        title: 'File length reliability per 60s / 1800 frames',
+        target: '0ms variance',
+        mode: 'bar', unit: 'ms', yMax: 220, targetLine: 0,
+        data: [
+          { v: 64, d: '64ms front · 16ms cabin · 0 rear', s: 'fail' },
+          { v: 32, d: '32ms front (1 frame)', s: 'partial' },
+          { v: 11, d: '11ms front · 0 rear', s: 'partial' },
+          { v: 200, d: '200ms', s: 'fail' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' },
+          { v: 0, d: '0ms variation', s: 'pass' }
+        ]
+      },
+      {
+        title: 'Audio–video synchronisation',
+        target: '≤ 0.033s (1 frame)',
+        mode: 'status',
+        data: [
+          { d: '—', s: 'na' }, { d: '—', s: 'na' }, { d: '—', s: 'na' },
+          { d: '—', s: 'na' }, { d: '—', s: 'na' }, { d: '—', s: 'na' },
+          { d: '—', s: 'na' }
+        ]
+      },
+      {
+        title: 'Audio present on each user-facing video stream',
+        target: 'FH/FL/CH/CL/RH/RL = audio · FT = no audio',
+        mode: 'status',
+        data: [
+          { d: 'Full set', s: 'pass' },
+          { d: 'Full set', s: 'pass' },
+          { d: 'Full set', s: 'pass' },
+          { d: 'Full set', s: 'pass' },
+          { d: 'Full set', s: 'pass' },
+          { d: 'Full set', s: 'pass' },
+          { d: 'Full set', s: 'pass' }
+        ]
+      },
+      {
+        title: 'Audio present on all file types (read-only & normal)',
+        target: 'Audio on both',
+        mode: 'status',
+        data: [
+          { d: 'Pass', s: 'pass' },
+          { d: 'Pass', s: 'pass' },
+          { d: 'Fail', s: 'fail' },
+          { d: 'Pass', s: 'pass' },
+          { d: 'Pass', s: 'pass' },
+          { d: 'Pass', s: 'pass' },
+          { d: 'Pass', s: 'pass' }
+        ]
+      },
+      {
+        title: 'GPS time-to-first-fix — cold',
+        target: '≤ 20s',
+        mode: 'bar', unit: 's', yMax: 35, targetLine: 20,
+        data: [
+          { v: null, d: '—', s: 'na' },
+          { v: 22, d: '22s', s: 'partial' },
+          { v: 22, d: '22s', s: 'partial' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' }
+        ]
+      },
+      {
+        title: 'GPS time-to-first-fix — warm',
+        target: '≤ 10s',
+        mode: 'bar', unit: 's', yMax: 15, targetLine: 10,
+        data: [
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' },
+          { v: 7, d: '7s', s: 'pass' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' }
+        ]
+      },
+      {
+        title: 'GPS time-to-first-fix — hot (tunnel exit)',
+        target: '≤ 1s',
+        mode: 'bar', unit: 's', yMax: 2, targetLine: 1,
+        data: [
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' },
+          { v: 0.5, d: '<1s', s: 'pass' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' }
+        ]
+      },
+      {
+        title: 'No-GPS-signal representation',
+        target: 'null (not 0.0)',
+        mode: 'status',
+        data: [
+          { d: 'Pass', s: 'pass' },
+          { d: '—', s: 'na' },
+          { d: 'Fail — jumps between points', s: 'fail' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' }
+        ]
+      },
+      {
+        title: 'Video stamp update rate',
+        target: '≥ 1Hz (≤1s)',
+        mode: 'status',
+        data: [
+          { d: '1Hz', s: 'pass' },
+          { d: '1Hz', s: 'pass' },
+          { d: '1Hz time · 0.5/1/2Hz speed', s: 'partial' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' },
+          { d: '—', s: 'na' }
+        ]
+      },
+      {
+        title: 'Speed calculation accuracy',
+        target: '±5%',
+        mode: 'bar', unit: '%', yMax: 30, targetLine: 5,
+        data: [
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' },
+          { v: 24, d: '1.3% constant · 24% accelerating', s: 'fail' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' },
+          { v: null, d: '—', s: 'na' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 4, label: 'Verify Recording', cls: 't4', cssVar: '--verify',
+    metrics: [
+      {
+        title: 'Recording start audio tone',
+        target: '15–20dB above ambient',
+        mode: 'status',
+        data: [
+          { d: 'Intelligible', s: 'pass' },
+          { d: 'Intelligible', s: 'pass' },
+          { d: 'Intelligible', s: 'pass' },
+          { d: 'Intelligible', s: 'pass' },
+          { d: 'Intelligible', s: 'pass' },
+          { d: 'Intelligible', s: 'pass' },
+          { d: 'Intelligible', s: 'pass' }
+        ]
+      },
+      {
+        title: 'Recording start visual LED indication',
+        target: 'Present',
+        mode: 'status',
+        data: [
+          { d: 'On screen', s: 'pass' },
+          { d: 'On screen', s: 'pass' },
+          { d: 'Daylight visible', s: 'pass' },
+          { d: 'Daylight visible', s: 'pass' },
+          { d: 'Daylight visible', s: 'pass' },
+          { d: 'Daylight visible', s: 'pass' },
+          { d: 'Daylight visible', s: 'pass' }
+        ]
+      },
+      {
+        title: 'File system promptly presented in app',
+        target: '≤ 10s for visible files',
+        mode: 'bar', unit: 's', yMax: 12, targetLine: 10,
+        data: [
+          { v: 8, d: '8s (front only — smart)', s: 'partial' },
+          { v: 2, d: '2s (front only — smart)', s: 'partial' },
+          { v: null, d: '—', s: 'na' },
+          { v: 10, d: '10s', s: 'pass' },
+          { v: 4, d: '4s', s: 'pass' },
+          { v: 8, d: '8s', s: 'pass' },
+          { v: 4, d: '4s', s: 'pass' }
+        ]
+      }
+    ]
+  }
 ];
 
-function uid(prefix = 'id') {
-  return `${prefix}-${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
-}
+const colorFor = s => s === 'pass' ? PASS : s === 'partial' ? PARTIAL : s === 'fail' ? FAIL : NA;
+const report = document.getElementById('report');
+let chartIdx = 0;
 
-// ───────────────────────────────────────────────────────────────────────────
-// Archive state hook
-// ───────────────────────────────────────────────────────────────────────────
-function useArchive() {
-  const [config, setConfigState] = useState(() => lsGet(LS.CONFIG, DEFAULT_CONFIG));
-  const [items, setItems] = useState(() => {
-    const ids = lsGet(LS.ITEM_IDS, null);
-    if (ids && Array.isArray(ids)) {
-      const loaded = ids.map((id) => lsGet(LS.ITEM(id), null)).filter(Boolean);
-      // Inject seeds that haven't been deleted, on first run when no items exist
-      const deletedSeeds = lsGet(LS.DELETED_SEEDS, []);
-      if (loaded.length === 0) {
-        const fresh = SEEDS.filter((s) => !deletedSeeds.includes(s.id));
-        return fresh;
-      }
-      return loaded;
-    } else {
-      const deletedSeeds = lsGet(LS.DELETED_SEEDS, []);
-      return SEEDS.filter((s) => !deletedSeeds.includes(s.id));
+sections.forEach(sec => {
+  // Section header
+  const head = document.createElement('div');
+  head.className = 'section-head';
+  head.innerHTML = `
+    <span class="tag ${sec.cls}">${sec.id}</span>
+    <h2>${sec.label}</h2>
+    <span class="meta">${sec.metrics.length} metrics</span>
+  `;
+  report.appendChild(head);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  report.appendChild(grid);
+
+  sec.metrics.forEach(m => {
+    const counts = { pass: 0, partial: 0, fail: 0, na: 0 };
+    m.data.forEach(d => counts[d.s]++);
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    const cid = 'c' + (chartIdx++);
+    card.innerHTML = `
+      <div class="card-head">
+        <div class="title">${m.title}</div>
+        <div class="target">Target<br><b>${m.target}</b></div>
+      </div>
+      <div class="summary">
+        <span class="pill pass"><span class="dot"></span>${counts.pass}P</span>
+        <span class="pill partial"><span class="dot"></span>${counts.partial}~</span>
+        <span class="pill fail"><span class="dot"></span>${counts.fail}F</span>
+        <span class="pill na"><span class="dot"></span>${counts.na} N/T</span>
+      </div>
+      ${m.mode === 'bar'
+        ? `<div class="chart-wrap"><canvas id="${cid}"></canvas></div>`
+        : `<div class="status-grid">${m.data.map((d, i) =>
+            `<div class="status-cell ${d.s}"><span class="cam">${cameras[i]}</span><span class="v">${d.d}</span></div>`
+          ).join('')}</div>`}
+    `;
+    grid.appendChild(card);
+
+    if (m.mode === 'bar') {
+      const values = m.data.map(d => d.v === null ? 0 : d.v);
+      const colors = m.data.map(d => colorFor(d.s));
+      const labels = m.data.map(d => d.d);
+
+      new Chart(document.getElementById(cid), {
+        type: 'bar',
+        data: { labels: cameras, datasets: [{
+          data: values,
+          backgroundColor: colors,
+          borderRadius: 3,
+          borderSkipped: false
+        }] },
+        options: {
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: c => labels[c.dataIndex] } }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 8.5 }, maxRotation: 50, minRotation: 35 } },
+            y: {
+              beginAtZero: true,
+              max: m.yMax,
+              grid: { color: LINE },
+              ticks: { callback: v => v + (m.unit || ''), font: { size: 9.5 } }
+            }
+          },
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
     }
   });
-
-  // On first mount, ensure seeds are written if not yet stored.
-  const seededRef = useRef(false);
-  useEffect(() => {
-    if (seededRef.current) return;
-    seededRef.current = true;
-    const existingIds = lsGet(LS.ITEM_IDS, null);
-    if (!existingIds) {
-      // first-ever load: write seeds to LS + Supabase
-      const deleted = lsGet(LS.DELETED_SEEDS, []);
-      const fresh = SEEDS.filter((s) => !deleted.includes(s.id));
-      const ids = fresh.map((s) => s.id);
-      lsSet(LS.ITEM_IDS, ids);
-      lsSet(LS.CONFIG, config);
-      fresh.forEach((item) => {
-        lsSet(LS.ITEM(item.id), item);
-        sbUpsert(LS.ITEM(item.id), item);
-      });
-      sbUpsert(LS.ITEM_IDS, ids);
-      sbUpsert(LS.CONFIG, config);
-    }
-    // Background sync: pull config + items from Supabase and merge. Local wins.
-    (async () => {
-      if (!SUPABASE_ENABLED) return;
-      const remoteConfig = await sbGet(LS.CONFIG);
-      if (remoteConfig && !lsGet(LS.CONFIG, null)) {
-        lsSet(LS.CONFIG, remoteConfig);
-        setConfigState(remoteConfig);
-      }
-      const remoteItems = await sbGetAllItems();
-      if (remoteItems.length) {
-        const localIds = new Set((lsGet(LS.ITEM_IDS, []) || []).map(String));
-        const deletedSeeds = lsGet(LS.DELETED_SEEDS, []);
-        const additions = remoteItems.filter(
-          (it) => it && it.id && !localIds.has(it.id) && !deletedSeeds.includes(it.id)
-        );
-        if (additions.length) {
-          additions.forEach((it) => lsSet(LS.ITEM(it.id), it));
-          const newIds = [...(lsGet(LS.ITEM_IDS, []) || []), ...additions.map((it) => it.id)];
-          lsSet(LS.ITEM_IDS, newIds);
-          setItems((prev) => [...prev, ...additions]);
-        }
-      }
-    })();
-  // eslint-disable-next-line
-  }, []);
-
-  const persistItems = (next) => {
-    setItems(next);
-    const ids = next.map((i) => i.id);
-    lsSet(LS.ITEM_IDS, ids);
-    sbUpsert(LS.ITEM_IDS, ids);
-  };
-
-  const setConfig = (next) => {
-    setConfigState(next);
-    lsSet(LS.CONFIG, next);
-    sbUpsert(LS.CONFIG, next);
-  };
-
-  const upsertItem = (item) => {
-    setItems((prev) => {
-      const idx = prev.findIndex((p) => p.id === item.id);
-      let next;
-      if (idx === -1) next = [...prev, item];
-      else { next = [...prev]; next[idx] = item; }
-      const ids = next.map((i) => i.id);
-      lsSet(LS.ITEM_IDS, ids);
-      lsSet(LS.ITEM(item.id), item);
-      sbUpsert(LS.ITEM_IDS, ids);
-      sbUpsert(LS.ITEM(item.id), item);
-      return next;
-    });
-  };
-
-  const deleteItem = (id) => {
-    setItems((prev) => {
-      const target = prev.find((p) => p.id === id);
-      const next = prev.filter((p) => p.id !== id);
-      const ids = next.map((i) => i.id);
-      lsSet(LS.ITEM_IDS, ids);
-      lsDel(LS.ITEM(id));
-      sbUpsert(LS.ITEM_IDS, ids);
-      sbDelete(LS.ITEM(id));
-      if (target && target.isSeed) {
-        const deleted = lsGet(LS.DELETED_SEEDS, []);
-        if (!deleted.includes(id)) {
-          const nextDeleted = [...deleted, id];
-          lsSet(LS.DELETED_SEEDS, nextDeleted);
-          sbUpsert(LS.DELETED_SEEDS, nextDeleted);
-        }
-      }
-      return next;
-    });
-  };
-
-  const addTab = (name) => {
-    const tab = { id: uid('tab'), name };
-    setConfig({ ...config, tabs: [...config.tabs, tab] });
-    return tab;
-  };
-  const deleteTab = (tabId) => {
-    // Reassign items in that tab to "all"
-    const affected = items.filter((i) => i.tabId === tabId);
-    affected.forEach((it) => upsertItem({ ...it, tabId: 'all' }));
-    setConfig({ ...config, tabs: config.tabs.filter((t) => t.id !== tabId) });
-  };
-
-  return {
-    config, setConfig,
-    items, setItems: persistItems,
-    upsertItem, deleteItem,
-    addTab, deleteTab,
-  };
-}
-
-// ───────────────────────────────────────────────────────────────────────────
-// Small UI helpers
-// ───────────────────────────────────────────────────────────────────────────
-function StarIcon({ filled = false, className = '' }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </svg>
-  );
-}
-function IconButton({ onClick, title, children, className = '' }) {
-  return (
-    <button onClick={onClick} title={title}
-      className={`inline-flex items-center justify-center rounded-md p-1.5 text-muted hover:text-ink hover:bg-line/60 transition-colors ${className}`}>
-      {children}
-    </button>
-  );
-}
-function PrimaryButton({ onClick, children, className = '' }) {
-  return (
-    <button onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-md bg-ember text-parchment px-3 py-2 text-sm font-medium hover:bg-ember/90 transition-colors ${className}`}>
-      {children}
-    </button>
-  );
-}
-function GhostButton({ onClick, children, className = '' }) {
-  return (
-    <button onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-md border border-line bg-parchment px-3 py-2 text-sm font-medium text-ink hover:border-muted/50 transition-colors ${className}`}>
-      {children}
-    </button>
-  );
-}
-
-function formatBytes(n) {
-  if (!n && n !== 0) return '';
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
-}
-
-// ───────────────────────────────────────────────────────────────────────────
-// Long-press hook
-// ───────────────────────────────────────────────────────────────────────────
-function useLongPress(onLongPress, ms = 800) {
-  const timer = useRef(null);
-  const triggered = useRef(false);
-  const start = (e) => {
-    if (e && e.cancelable) e.preventDefault();
-    triggered.current = false;
-    clear();
-    timer.current = setTimeout(() => {
-      triggered.current = true;
-      onLongPress();
-    }, ms);
-  };
-  const clear = () => {
-    if (timer.current) {
-      clearTimeout(timer.current);
-      timer.current = null;
-    }
-  };
-  return {
-    onPointerDown: start,
-    onPointerUp: clear,
-    onPointerLeave: clear,
-    onPointerCancel: clear,
-  };
-}
-
-// ───────────────────────────────────────────────────────────────────────────
-// Header
-// ───────────────────────────────────────────────────────────────────────────
-function Header({ title, onOpenAdmin }) {
-  const longPress = useLongPress(onOpenAdmin, 800);
-  return (
-    <header className="border-b border-line">
-      <div className="max-w-3xl mx-auto px-6 py-6 flex items-center justify-between">
-        <h1 className="font-display text-3xl sm:text-4xl tracking-tight text-ink">{title}</h1>
-        <button
-          {...longPress}
-          className="text-muted hover:text-ember transition-colors select-none touch-none"
-          title=""
-          aria-label="archive star"
-        >
-          <StarIcon className="w-5 h-5" />
-        </button>
-      </div>
-    </header>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────────
-// Tab bar
-// ───────────────────────────────────────────────────────────────────────────
-function TabBar({ tabs, current, onChange, counts }) {
-  if (!tabs || tabs.length < 1) return null;
-  const all = { id: 'all', name: 'All' };
-  const list = [all, ...tabs];
-  return (
-    <div className="max-w-3xl mx-auto px-6 mt-4">
-      <div className="flex flex-wrap gap-1 border-b border-line">
-        {list.map((t) => {
-          const active = current === t.id;
-          return (
-            <button key={t.id} onClick={() => onChange(t.id)}
-              className={`px-3 py-2 text-sm font-medium relative transition-colors ${active ? 'text-ember' : 'text-muted hover:text-ink'}`}>
-              {t.name}
-              <span className="font-mono text-[10px] ml-1.5 text-muted/80">{counts[t.id] || 0}</span>
-              {active && <span className="absolute left-2 right-2 -bottom-px h-[2px] bg-ember rounded-full" />}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────────
-// Item list
-// ───────────────────────────────────────────────────────────────────────────
-function ItemList({ items, onOpen }) {
-  if (!items.length) {
-    return (
-      <div className="max-w-3xl mx-auto px-6 py-16 text-center">
-        <p className="font-display text-2xl text-ink mb-2">Nothing here yet</p>
-        <p className="text-muted text-sm">Long-press the star above to open the admin portal and add your first item.</p>
-      </div>
-    );
-  }
-  return (
-    <div className="max-w-3xl mx-auto px-6 py-6">
-      <ul className="divide-y divide-line">
-        {items.map((item) => {
-          const hint = item.type === 'html'
-            ? formatBytes(item.data?.size)
-            : `${(item.data?.rows?.length || 0)} rows · ${(item.data?.columns?.length || 0)} cols`;
-          return (
-            <li key={item.id}>
-              <button onClick={() => onOpen(item)}
-                className="group w-full text-left py-5 flex items-start justify-between gap-6 hover:bg-line/30 -mx-3 px-3 rounded-md transition-colors">
-                <div className="min-w-0">
-                  <div className="flex items-baseline gap-3">
-                    <h3 className="font-display text-xl text-ink truncate">{item.title || 'Untitled'}</h3>
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-muted/80">{item.type}</span>
-                  </div>
-                  {item.description && (
-                    <p className="text-muted text-sm mt-1 line-clamp-2">{item.description}</p>
-                  )}
-                </div>
-                <div className="shrink-0 font-mono text-xs text-muted whitespace-nowrap pt-1.5">{hint}</div>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────────
-// HTML viewer
-// ───────────────────────────────────────────────────────────────────────────
-function HtmlViewer({ item, onBack }) {
-  return (
-    <div className="fixed inset-0 bg-parchment flex flex-col z-40">
-      <div className="border-b border-line px-4 py-3 flex items-center gap-3 bg-parchment">
-        <GhostButton onClick={onBack}>← Back</GhostButton>
-        <div className="min-w-0">
-          <div className="font-display text-lg truncate">{item.title}</div>
-          {item.description && <div className="text-muted text-xs truncate">{item.description}</div>}
-        </div>
-      </div>
-      <iframe
-        title={item.title}
-        srcDoc={item.data?.content || '<p style="font-family: sans-serif; padding: 2rem; color:#777">No content.</p>'}
-        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-        className="flex-1 w-full bg-white"
-      />
-    </div>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────────
-// Table editor
-// ───────────────────────────────────────────────────────────────────────────
-function TableEditor({ item, onBack, onSave }) {
-  const [data, setData] = useState(item.data || { columns: [], rows: [] });
-  const [editing, setEditing] = useState(null); // { type: 'cell'|'header', r?, c }
-  const [draft, setDraft] = useState('');
-  const taRef = useRef(null);
-
-  // Auto-save on every data change
-  useEffect(() => {
-    onSave({ ...item, data });
-  // eslint-disable-next-line
-  }, [data]);
-
-  useEffect(() => {
-    if (editing && taRef.current) {
-      taRef.current.focus();
-      taRef.current.select();
-    }
-  }, [editing]);
-
-  const startCellEdit = (r, c) => {
-    setEditing({ type: 'cell', r, c });
-    setDraft(data.rows[r]?.[c] ?? '');
-  };
-  const startHeaderEdit = (c) => {
-    setEditing({ type: 'header', c });
-    setDraft(data.columns[c]?.label ?? '');
-  };
-  const commit = () => {
-    if (!editing) return;
-    if (editing.type === 'cell') {
-      const nextRows = data.rows.map((row, ri) => {
-        if (ri !== editing.r) return row;
-        const copy = [...row];
-        copy[editing.c] = draft;
-        return copy;
-      });
-      setData({ ...data, rows: nextRows });
-    } else {
-      const nextCols = data.columns.map((col, ci) => ci === editing.c ? { ...col, label: draft } : col);
-      setData({ ...data, columns: nextCols });
-    }
-    setEditing(null);
-  };
-  const cancel = () => setEditing(null);
-
-  const addColumn = () => {
-    const newCol = { id: uid('c'), label: `Column ${data.columns.length + 1}` };
-    const newRows = data.rows.map((row) => [...row, '']);
-    setData({ columns: [...data.columns, newCol], rows: newRows });
-  };
-  const addRow = () => {
-    const newRow = data.columns.map(() => '');
-    setData({ ...data, rows: [...data.rows, newRow] });
-  };
-  const deleteColumn = (c) => {
-    const newCols = data.columns.filter((_, i) => i !== c);
-    const newRows = data.rows.map((row) => row.filter((_, i) => i !== c));
-    setData({ columns: newCols, rows: newRows });
-  };
-  const deleteRow = (r) => {
-    setData({ ...data, rows: data.rows.filter((_, i) => i !== r) });
-  };
-
-  const handleKey = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commit(); }
-    if (e.key === 'Escape') { e.preventDefault(); cancel(); }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-parchment flex flex-col z-40">
-      <div className="border-b border-line px-4 py-3 flex items-center gap-3 bg-parchment">
-        <GhostButton onClick={onBack}>← Back</GhostButton>
-        <div className="min-w-0 flex-1">
-          <div className="font-display text-lg truncate">{item.title}</div>
-          {item.description && <div className="text-muted text-xs truncate">{item.description}</div>}
-        </div>
-        <div className="flex items-center gap-2">
-          <GhostButton onClick={addColumn}>+ Column</GhostButton>
-          <GhostButton onClick={addRow}>+ Row</GhostButton>
-        </div>
-      </div>
-      <div className="flex-1 overflow-auto">
-        <table className="min-w-full border-separate border-spacing-0">
-          <thead className="sticky top-0 z-10">
-            <tr>
-              <th className="w-10 bg-parchment border-b border-line" />
-              {data.columns.map((col, c) => (
-                <th key={col.id} className="group bg-parchment border-b border-line text-left">
-                  <div className="relative px-3 py-2 min-w-[160px]">
-                    {editing && editing.type === 'header' && editing.c === c ? (
-                      <textarea
-                        ref={taRef}
-                        value={draft}
-                        onChange={(e) => setDraft(e.target.value)}
-                        onBlur={commit}
-                        onKeyDown={handleKey}
-                        className="w-full font-mono text-xs uppercase tracking-wider bg-parchment border border-ember/40 rounded px-1.5 py-1 outline-none"
-                        rows={1}
-                      />
-                    ) : (
-                      <button
-                        onDoubleClick={() => startHeaderEdit(c)}
-                        className="font-mono text-xs uppercase tracking-wider text-muted hover:text-ink text-left w-full"
-                        title="Double-click to rename"
-                      >
-                        {col.label || '—'}
-                      </button>
-                    )}
-                    <button
-                      onClick={() => deleteColumn(c)}
-                      className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 text-muted hover:text-ember text-xs px-1.5 py-0.5 rounded transition-opacity"
-                      title="Delete column"
-                    >×</button>
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.rows.map((row, r) => (
-              <tr key={r} className="group">
-                <td className="w-10 border-b border-line/60 align-top">
-                  <div className="relative h-full">
-                    <span className="block font-mono text-[10px] text-muted/60 text-right pr-2 pt-3">{r + 1}</span>
-                  </div>
-                </td>
-                {data.columns.map((col, c) => (
-                  <td key={col.id} className="border-b border-line/60 align-top">
-                    {editing && editing.type === 'cell' && editing.r === r && editing.c === c ? (
-                      <textarea
-                        ref={taRef}
-                        value={draft}
-                        onChange={(e) => setDraft(e.target.value)}
-                        onBlur={commit}
-                        onKeyDown={handleKey}
-                        className="w-full min-h-[44px] px-3 py-2 text-sm bg-parchment border border-ember/40 outline-none"
-                        rows={Math.max(1, draft.split('\n').length)}
-                      />
-                    ) : (
-                      <button
-                        onClick={() => startCellEdit(r, c)}
-                        className="w-full text-left px-3 py-2 text-sm text-ink hover:bg-line/40 whitespace-pre-wrap min-h-[44px]"
-                      >
-                        {row[c] || <span className="text-muted/50">—</span>}
-                      </button>
-                    )}
-                  </td>
-                ))}
-                <td className="w-10 border-b border-line/60 align-top">
-                  <button
-                    onClick={() => deleteRow(r)}
-                    className="opacity-0 group-hover:opacity-100 text-muted hover:text-ember text-xs px-2 py-2 transition-opacity"
-                    title="Delete row"
-                  >×</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {(!data.rows.length || !data.columns.length) && (
-          <div className="p-8 text-center text-muted text-sm">
-            {!data.columns.length && <p>Add a column to begin.</p>}
-            {data.columns.length > 0 && !data.rows.length && <p>Add a row to begin entering data.</p>}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────────
-// Admin portal
-// ───────────────────────────────────────────────────────────────────────────
-function AdminPortal({ archive, onClose }) {
-  const { config, setConfig, items, upsertItem, deleteItem, addTab, deleteTab } = archive;
-  const [pageTitle, setPageTitle] = useState(config.pageTitle);
-  const [newTabName, setNewTabName] = useState('');
-  const fileInputRef = useRef(null);
-  const [dragOver, setDragOver] = useState(false);
-
-  useEffect(() => { setPageTitle(config.pageTitle); }, [config.pageTitle]);
-
-  const commitTitle = () => {
-    const next = (pageTitle || '').trim() || 'Archive';
-    if (next !== config.pageTitle) setConfig({ ...config, pageTitle: next });
-  };
-
-  const handleFiles = async (files) => {
-    const list = Array.from(files || []);
-    for (const f of list) {
-      const isHtml = /\.html?$/i.test(f.name) || f.type.includes('html');
-      if (!isHtml) continue;
-      const text = await f.text();
-      const item = {
-        id: uid('item'),
-        type: 'html',
-        title: f.name.replace(/\.html?$/i, ''),
-        description: '',
-        tabId: 'all',
-        createdAt: Date.now(),
-        data: { content: text, size: text.length },
-      };
-      upsertItem(item);
-    }
-  };
-
-  const onDrop = (e) => {
-    e.preventDefault();
-    setDragOver(false);
-    handleFiles(e.dataTransfer.files);
-  };
-
-  const createBlankTable = () => {
-    const item = {
-      id: uid('item'),
-      type: 'table',
-      title: 'Untitled table',
-      description: '',
-      tabId: 'all',
-      createdAt: Date.now(),
-      data: {
-        columns: [
-          { id: uid('c'), label: 'Column 1' },
-          { id: uid('c'), label: 'Column 2' },
-        ],
-        rows: [['', ''], ['', '']],
-      },
-    };
-    upsertItem(item);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-parchment z-50 fade-in overflow-y-auto">
-      <div className="max-w-3xl mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-wider text-muted">Admin</p>
-            <h2 className="font-display text-3xl text-ink mt-1">Settings</h2>
-          </div>
-          <GhostButton onClick={onClose}>Done</GhostButton>
-        </div>
-
-        {/* Page title */}
-        <section className="mb-10">
-          <h3 className="font-mono text-[10px] uppercase tracking-wider text-muted mb-2">Page title</h3>
-          <input
-            value={pageTitle}
-            onChange={(e) => setPageTitle(e.target.value)}
-            onBlur={commitTitle}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.currentTarget.blur(); } }}
-            className="w-full font-display text-2xl bg-transparent border-b border-line focus:border-ember outline-none py-2 text-ink"
-          />
-        </section>
-
-        {/* Tabs */}
-        <section className="mb-10">
-          <h3 className="font-mono text-[10px] uppercase tracking-wider text-muted mb-3">Tabs</h3>
-          {!config.tabs.length && <p className="text-sm text-muted mb-3">No custom tabs yet. Items will appear under "All".</p>}
-          <ul className="space-y-2 mb-4">
-            {config.tabs.map((t) => {
-              const count = items.filter((i) => i.tabId === t.id).length;
-              return (
-                <li key={t.id} className="flex items-center justify-between border border-line rounded-md px-3 py-2">
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-ink">{t.name}</span>
-                    <span className="font-mono text-[10px] text-muted">{count} items</span>
-                  </div>
-                  <button onClick={() => deleteTab(t.id)} className="text-xs text-muted hover:text-ember">Delete</button>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="flex gap-2">
-            <input
-              value={newTabName}
-              onChange={(e) => setNewTabName(e.target.value)}
-              placeholder="New tab name"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newTabName.trim()) {
-                  addTab(newTabName.trim());
-                  setNewTabName('');
-                }
-              }}
-              className="flex-1 border border-line rounded-md px-3 py-2 text-sm bg-parchment outline-none focus:border-ember"
-            />
-            <GhostButton onClick={() => {
-              if (newTabName.trim()) { addTab(newTabName.trim()); setNewTabName(''); }
-            }}>Add tab</GhostButton>
-          </div>
-        </section>
-
-        {/* Upload HTML / New table */}
-        <section className="mb-10">
-          <h3 className="font-mono text-[10px] uppercase tracking-wider text-muted mb-3">Add content</h3>
-          <div
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={onDrop}
-            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${dragOver ? 'border-ember bg-ember/5' : 'border-line bg-parchment'}`}
-          >
-            <p className="text-sm text-ink">Drop HTML files here</p>
-            <p className="text-xs text-muted mt-1">or</p>
-            <div className="mt-3 flex items-center justify-center gap-2">
-              <GhostButton onClick={() => fileInputRef.current?.click()}>Choose files</GhostButton>
-              <PrimaryButton onClick={createBlankTable}>New table</PrimaryButton>
-            </div>
-            <input ref={fileInputRef} type="file" multiple accept=".html,.htm,text/html" className="hidden"
-              onChange={(e) => handleFiles(e.target.files)} />
-          </div>
-        </section>
-
-        {/* Items list with edit */}
-        <section>
-          <h3 className="font-mono text-[10px] uppercase tracking-wider text-muted mb-3">Items ({items.length})</h3>
-          {!items.length && <p className="text-sm text-muted">No items yet.</p>}
-          <ul className="space-y-3">
-            {items.map((it) => (
-              <AdminItemRow key={it.id} item={it} tabs={config.tabs}
-                onChange={(next) => upsertItem(next)}
-                onDelete={() => deleteItem(it.id)} />
-            ))}
-          </ul>
-        </section>
-
-        <div className="mt-12 text-center font-mono text-[10px] text-muted">
-          {SUPABASE_ENABLED ? 'Supabase sync: ON' : 'Local-only mode · configure SUPABASE_URL/KEY in source to enable sync'}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AdminItemRow({ item, tabs, onChange, onDelete }) {
-  const [title, setTitle] = useState(item.title);
-  const [desc, setDesc] = useState(item.description || '');
-  const [tabId, setTabId] = useState(item.tabId || 'all');
-
-  useEffect(() => { setTitle(item.title); setDesc(item.description || ''); setTabId(item.tabId || 'all'); }, [item.id]);
-
-  const persist = (patch) => {
-    onChange({ ...item, title, description: desc, tabId, ...patch });
-  };
-
-  return (
-    <li className="border border-line rounded-md p-3">
-      <div className="flex items-start gap-3">
-        <span className="font-mono text-[10px] uppercase tracking-wider text-muted/80 mt-2 w-12 shrink-0">{item.type}</span>
-        <div className="flex-1 min-w-0 space-y-2">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={() => persist({ title })}
-            placeholder="Title"
-            className="w-full font-display text-lg bg-transparent border-b border-line focus:border-ember outline-none py-1"
-          />
-          <input
-            value={desc}
-            onChange={(e) => setDesc(e.target.value)}
-            onBlur={() => persist({ description: desc })}
-            placeholder="Description"
-            className="w-full text-sm bg-transparent border-b border-line focus:border-ember outline-none py-1 text-muted"
-          />
-          <div className="flex items-center gap-3 text-xs">
-            <label className="font-mono text-[10px] uppercase tracking-wider text-muted">Tab</label>
-            <select
-              value={tabId}
-              onChange={(e) => { setTabId(e.target.value); persist({ tabId: e.target.value }); }}
-              className="border border-line rounded-md px-2 py-1 bg-parchment text-sm outline-none focus:border-ember"
-            >
-              <option value="all">All</option>
-              {tabs.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          </div>
-        </div>
-        <button onClick={() => {
-          if (confirm(`Delete "${item.title}"?`)) onDelete();
-        }} className="text-xs text-muted hover:text-ember shrink-0">Delete</button>
-      </div>
-    </li>
-  );
-}
-
-// ───────────────────────────────────────────────────────────────────────────
-// Root app
-// ───────────────────────────────────────────────────────────────────────────
-function App() {
-  const archive = useArchive();
-  const [view, setView] = useState({ mode: 'list', itemId: null });
-  const [adminOpen, setAdminOpen] = useState(false);
-  const [currentTab, setCurrentTab] = useState('all');
-
-  const filtered = useMemo(() => {
-    if (currentTab === 'all') return archive.items;
-    return archive.items.filter((i) => i.tabId === currentTab);
-  }, [archive.items, currentTab]);
-
-  const counts = useMemo(() => {
-    const c = { all: archive.items.length };
-    archive.config.tabs.forEach((t) => { c[t.id] = 0; });
-    archive.items.forEach((it) => {
-      if (c[it.tabId] !== undefined) c[it.tabId] += 1;
-    });
-    return c;
-  }, [archive.items, archive.config.tabs]);
-
-  const openItem = (item) => setView({ mode: item.type, itemId: item.id });
-  const back = () => setView({ mode: 'list', itemId: null });
-
-  const activeItem = view.itemId ? archive.items.find((i) => i.id === view.itemId) : null;
-
-  // Show list view (header + tabs + items)
-  return (
-    <div className="min-h-full">
-      <Header title={archive.config.pageTitle} onOpenAdmin={() => setAdminOpen(true)} />
-      {archive.config.tabs.length >= 1 && (
-        <TabBar tabs={archive.config.tabs} current={currentTab} onChange={setCurrentTab} counts={counts} />
-      )}
-      <ItemList items={filtered} onOpen={openItem} />
-
-      {/* Item full-screen viewers */}
-      {activeItem && activeItem.type === 'html' && (
-        <HtmlViewer item={activeItem} onBack={back} />
-      )}
-      {activeItem && activeItem.type === 'table' && (
-        <TableEditor item={activeItem} onBack={back} onSave={archive.upsertItem} />
-      )}
-
-      {/* Admin overlay */}
-      {adminOpen && (
-        <AdminPortal archive={archive} onClose={() => setAdminOpen(false)} />
-      )}
-    </div>
-  );
-}
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+});
 </script>
+
 </body>
 </html>
