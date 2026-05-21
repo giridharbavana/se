@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Condensed Metrics — Per-Metric Camera Comparison</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1320;
+    --panel: #161b2e;
+    --panel-2: #1d2340;
+    --ink: #e9ecf6;
+    --muted: #9aa3c2;
+    --line: #2a3155;
+    --pass: #2ecc71;
+    --partial: #f5b14a;
+    --fail: #ef5350;
+    --na: #5a6383;
+    --accent: #5b8def;
+    --nb: #ffd400;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    background: linear-gradient(180deg, #0b0f1c 0%, #0f1320 100%);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    line-height: 1.3;
+  }
+  header {
+    border-bottom: 2px solid var(--line); padding-bottom: 12px; margin-bottom: 18px;
+  }
+  header .badge {
+    display: inline-block; padding: 3px 9px; border-radius: 999px;
+    background: var(--nb); color: #1a1a1a; font-weight: 700; font-size: 10px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  header h1 { margin: 6px 0 2px; font-size: 22px; letter-spacing: -0.01em; }
+  header .sub { color: var(--muted); font-size: 12px; }
+  .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 18px; }
+  .kpi {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 14px;
+  }
+  .kpi .lbl { font-size: 10px; color: var(--muted); font-weight: 600;
+    letter-spacing: 0.05em; text-transform: uppercase; }
+  .kpi .val { font-size: 22px; font-weight: 700; color: var(--ink); margin-top: 2px; line-height: 1.1; }
+  .kpi .val.pass { color: var(--pass); } .kpi .val.fail { color: var(--fail); } .kpi .val.partial { color: var(--partial); }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(2, 1fr); }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px 16px; display: flex; flex-direction: column;
+  }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .card-head .title { font-size: 13px; font-weight: 600; color: var(--ink); flex: 1; }
+  .card-head .target { font-size: 11px; color: var(--muted); text-align: right; white-space: nowrap; }
+  .card-head .target b { color: var(--ink); }
+  .summary { display: flex; gap: 8px; font-size: 11px; color: var(--muted); margin-bottom: 8px; flex-wrap: wrap; }
+  .summary .pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px;
+    border-radius: 999px; background: rgba(255,255,255,.03); }
+  .summary .pill .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .summary .pill.pass .dot { background: var(--pass); } .summary .pill.pass { color: var(--pass); }
+  .summary .pill.partial .dot { background: var(--partial); } .summary .pill.partial { color: var(--partial); }
+  .summary .pill.fail .dot { background: var(--fail); } .summary .pill.fail { color: var(--fail); }
+  .summary .pill.na .dot { background: var(--na); } .summary .pill.na { color: var(--na); }
+  .chart-wrap { position: relative; height: 200px; }
+  .status-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .status-cell { padding: 10px 8px; border-radius: 8px; text-align: center; font-size: 11px;
+    background: rgba(90,99,131,.10); border: 1px solid var(--line); }
+  .status-cell .cam { display: block; font-size: 10px; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+  .status-cell .v { font-size: 12px; font-weight: 600; color: var(--ink); }
+  .status-cell.pass { background: rgba(46,204,113,.12); border-color: rgba(46,204,113,.25); }
+  .status-cell.pass .v { color: var(--pass); }
+  .status-cell.partial { background: rgba(245,177,74,.12); border-color: rgba(245,177,74,.25); }
+  .status-cell.partial .v { color: var(--partial); }
+  .status-cell.fail { background: rgba(239,83,80,.12); border-color: rgba(239,83,80,.25); }
+  .status-cell.fail .v { color: var(--fail); }
+  .status-cell.na { background: rgba(90,99,131,.10); }
+  .status-cell.na .v { color: var(--na); }
+  footer { color: var(--muted); font-size: 11px; margin-top: 22px;
+    border-top: 1px solid var(--line); padding-top: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="badge">Nextbase · Condensed Tab Comparison</span>
+  <h1>Per-Metric Camera Comparison — All 5 Cameras, All 15 Metrics</h1>
+  <div class="sub">Source: <em>Competitor Performance Metrics v1.0-2.xlsx</em> · Sheet: <em>Condensed</em> · Compared against proposed Nextbase UX targets</div>
+</header>
+
+<!-- TOP NUMBERS -->
+<div class="kpi-row">
+  <div class="kpi"><div class="lbl">Cameras</div><div class="val">5</div></div>
+  <div class="kpi"><div class="lbl">Metrics</div><div class="val">15</div></div>
+  <div class="kpi"><div class="lbl">Total cells</div><div class="val">75</div></div>
+  <div class="kpi"><div class="lbl">Universal fail</div><div class="val fail">3</div></div>
+  <div class="kpi"><div class="lbl">Universal pass</div><div class="val pass">0</div></div>
+</div>
+
+<div class="grid" id="metricGrid"></div>
+
+<footer>
+  Cameras: Road Angel Ignite · Road Angel Ignite 2 · Road Angel HALO Guardian · Road Angel HALO Spark Dual · Road Angel Halo Pro 2K F/R.
+  Pass / Partial / Fail / N-GPS classification based on each cell's value vs. the proposed Nextbase UX target. "1" in the source plate-legibility row is preserved as-is.
+</footer>
+
+<script>
+const PASS = '#2ecc71', PARTIAL = '#f5b14a', FAIL = '#ef5350', NA = '#5a6383';
+const TEXT = '#e9ecf6', MUTED = '#9aa3c2', LINE = '#2a3155';
+
+Chart.defaults.color = MUTED;
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, Segoe UI, Inter, Roboto, sans-serif';
+Chart.defaults.font.size = 10.5;
+
+const cameras = ['RA Ignite', 'RA Ignite 2', 'HALO Guardian', 'HALO Spark Dual', 'Halo Pro 2K'];
+
+// Each metric:
+// {title, target, mode: 'bar' | 'status', data: [{value, display, status}], unit, yMax}
+// status: pass | partial | fail | na
+const metrics = [
+  {
+    title: '1. Pairing time',
+    target: '< 60s',
+    mode: 'bar',
+    unit: 's',
+    yMax: 120,
+    targetLine: 60,
+    data: [
+      { v: 104, d: '1m 44s', s: 'fail' },
+      { v: 104, d: '1m 44s', s: 'fail' },
+      { v: 104, d: '1m 44s', s: 'fail' },
+      { v: 104, d: '1m 44s', s: 'fail' },
+      { v: 104, d: '1m 44s', s: 'fail' }
+    ]
+  },
+  {
+    title: '2. Frame rate',
+    target: '30 fps unique',
+    mode: 'bar',
+    unit: ' fps',
+    yMax: 35,
+    targetLine: 30,
+    data: [
+      { v: 30, d: '30 fps', s: 'pass' },
+      { v: 30, d: '30 fps', s: 'pass' },
+      { v: 24, d: '30 F / 24 R', s: 'partial' },
+      { v: 30, d: '30 fps', s: 'pass' },
+      { v: 25, d: '25 fps', s: 'fail' }
+    ]
+  },
+  {
+    title: '3. Time to first frame — cold',
+    target: '≤ 1s',
+    mode: 'bar',
+    unit: 's',
+    yMax: 11,
+    targetLine: 1,
+    data: [
+      { v: 7.1, d: '7.1s', s: 'fail' },
+      { v: 8.4, d: '8.4s', s: 'fail' },
+      { v: 9.3, d: '9.3s', s: 'fail' },
+      { v: 9.2, d: '9.2s', s: 'fail' },
+      { v: 7.4, d: '7.4s', s: 'fail' }
+    ]
+  },
+  {
+    title: '4. Time to first frame — warm',
+    target: '≤ 1s',
+    mode: 'bar',
+    unit: 's',
+    yMax: 10,
+    targetLine: 1,
+    data: [
+      { v: null, d: 'Not tested', s: 'na' },
+      { v: 7, d: '7s', s: 'fail' },
+      { v: 8.5, d: '8.5s', s: 'fail' },
+      { v: null, d: 'Fail', s: 'fail' },
+      { v: null, d: 'Fail', s: 'fail' }
+    ]
+  },
+  {
+    title: '5. File length reliability',
+    target: '0ms variance',
+    mode: 'bar',
+    unit: 'ms',
+    yMax: 250,
+    targetLine: 0,
+    data: [
+      { v: 200, d: '200ms variance', s: 'fail' },
+      { v: null, d: 'Fail — keeps restarting', s: 'fail' },
+      { v: null, d: 'Fail — turned off, missing journey', s: 'fail' },
+      { v: 0, d: '0ms', s: 'pass' },
+      { v: 11, d: '11ms', s: 'partial' }
+    ]
+  },
+  {
+    title: '6. File list visible in app',
+    target: '≤ 10s',
+    mode: 'bar',
+    unit: 's',
+    yMax: 12,
+    targetLine: 10,
+    data: [
+      { v: 10, d: '10s', s: 'pass' },
+      { v: 4, d: '4s', s: 'pass' },
+      { v: 8, d: '8s', s: 'pass' },
+      { v: 4, d: '4s', s: 'pass' },
+      { v: 10, d: '10s', s: 'pass' }
+    ]
+  },
+  {
+    title: '7. Image quality on first frame',
+    target: 'Pass',
+    mode: 'status',
+    data: [
+      { d: 'Fail — over-exposed', s: 'fail' },
+      { d: 'Fail — white frames', s: 'fail' },
+      { d: 'Pass', s: 'pass' },
+      { d: 'Pass', s: 'pass' },
+      { d: 'Pass', s: 'pass' }
+    ]
+  },
+  {
+    title: '8. WiFi reconnect (rebooted)',
+    target: '< 20s',
+    mode: 'status',
+    data: [
+      { d: 'Fail — no auto reconnect', s: 'fail' },
+      { d: 'Fail — no auto reconnect', s: 'fail' },
+      { d: 'Fail — no auto reconnect', s: 'fail' },
+      { d: 'Fail — no auto reconnect', s: 'fail' },
+      { d: 'Fail — no auto reconnect', s: 'fail' }
+    ]
+  },
+  {
+    title: '9. Audio on read-only files',
+    target: 'Audio present',
+    mode: 'status',
+    data: [
+      { d: 'Pass', s: 'pass' },
+      { d: 'Pass', s: 'pass' },
+      { d: 'Pass', s: 'pass' },
+      { d: 'Pass', s: 'pass' },
+      { d: 'Fail', s: 'fail' }
+    ]
+  },
+  {
+    title: '10. GPS — cold fix',
+    target: '≤ 20s',
+    mode: 'bar',
+    unit: 's',
+    yMax: 35,
+    targetLine: 20,
+    data: [
+      { v: null, d: 'No GPS', s: 'na' },
+      { v: null, d: 'No GPS', s: 'na' },
+      { v: 28, d: '28s', s: 'fail' },
+      { v: null, d: 'No GPS', s: 'na' },
+      { v: 22, d: '22s', s: 'partial' }
+    ]
+  },
+  {
+    title: '11. GPS — warm fix',
+    target: '≤ 10s',
+    mode: 'bar',
+    unit: 's',
+    yMax: 35,
+    targetLine: 10,
+    data: [
+      { v: null, d: 'No GPS', s: 'na' },
+      { v: null, d: 'No GPS', s: 'na' },
+      { v: 27, d: '27s', s: 'fail' },
+      { v: null, d: 'No GPS', s: 'na' },
+      { v: 7, d: '7s', s: 'pass' }
+    ]
+  },
+  {
+    title: '12. No-GPS-signal handling',
+    target: 'null (not 0.0)',
+    mode: 'status',
+    data: [
+      { d: 'No GPS', s: 'na' },
+      { d: 'No GPS', s: 'na' },
+      { d: 'Fail — map blank', s: 'fail' },
+      { d: 'No GPS', s: 'na' },
+      { d: 'Pass', s: 'pass' }
+    ]
+  },
+  {
+    title: '13. Video stamp update rate',
+    target: '≥ 1Hz',
+    mode: 'status',
+    data: [
+      { d: 'No GPS', s: 'na' },
+      { d: 'No GPS', s: 'na' },
+      { d: '1Hz', s: 'pass' },
+      { d: 'No GPS', s: 'na' },
+      { d: '1Hz time · 0.5/1/2Hz speed', s: 'partial' }
+    ]
+  },
+  {
+    title: '14. Speed accuracy',
+    target: '±5%',
+    mode: 'bar',
+    unit: '%',
+    yMax: 30,
+    targetLine: 5,
+    data: [
+      { v: null, d: 'No GPS', s: 'na' },
+      { v: null, d: 'No GPS', s: 'na' },
+      { v: 10, d: '10% accelerating', s: 'fail' },
+      { v: null, d: 'No GPS', s: 'na' },
+      { v: 24, d: '24% accelerating (1.3% constant)', s: 'fail' }
+    ]
+  },
+  {
+    title: '15. Number-plate legibility (60mph inclement)',
+    target: '≥ 75%',
+    mode: 'bar',
+    unit: '%',
+    yMax: 100,
+    targetLine: 75,
+    data: [
+      { v: 1, d: '1 (source as-is)', s: 'fail' },
+      { v: 1, d: '1 (source as-is)', s: 'fail' },
+      { v: 100, d: '100% front', s: 'pass' },
+      { v: 100, d: '100% F / 65% R', s: 'partial' },
+      { v: 54, d: '54% F / 0% R', s: 'fail' }
+    ]
+  }
+];
+
+const colorFor = s => s === 'pass' ? PASS : s === 'partial' ? PARTIAL : s === 'fail' ? FAIL : NA;
+
+const grid = document.getElementById('metricGrid');
+
+metrics.forEach((m, idx) => {
+  // Count statuses
+  const counts = { pass: 0, partial: 0, fail: 0, na: 0 };
+  m.data.forEach(d => counts[d.s]++);
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="card-head">
+      <div class="title">${m.title}</div>
+      <div class="target">Target: <b>${m.target}</b></div>
+    </div>
+    <div class="summary">
+      <span class="pill pass"><span class="dot"></span>${counts.pass} pass</span>
+      <span class="pill partial"><span class="dot"></span>${counts.partial} partial</span>
+      <span class="pill fail"><span class="dot"></span>${counts.fail} fail</span>
+      ${counts.na ? `<span class="pill na"><span class="dot"></span>${counts.na} N/A</span>` : ''}
+    </div>
+    ${m.mode === 'bar'
+      ? `<div class="chart-wrap"><canvas id="c${idx}"></canvas></div>`
+      : `<div class="status-grid">${m.data.map((d, i) =>
+          `<div class="status-cell ${d.s}"><span class="cam">${cameras[i]}</span><span class="v">${d.d}</span></div>`
+        ).join('')}</div>`}
+  `;
+  grid.appendChild(card);
+
+  if (m.mode === 'bar') {
+    const values = m.data.map(d => d.v === null ? 0 : d.v);
+    const colors = m.data.map(d => colorFor(d.s));
+    const labels = m.data.map(d => d.d);
+
+    const targetAnno = m.targetLine !== undefined ? {
+      type: 'line',
+      yMin: m.targetLine, yMax: m.targetLine,
+      borderColor: 'rgba(91,141,239,.55)',
+      borderWidth: 1.5,
+      borderDash: [4, 4],
+      label: {
+        display: true,
+        content: 'target',
+        backgroundColor: 'rgba(91,141,239,.85)',
+        color: 'white',
+        font: { size: 9 },
+        padding: 2,
+        position: 'end'
+      }
+    } : null;
+
+    new Chart(document.getElementById('c' + idx), {
+      type: 'bar',
+      data: { labels: cameras, datasets: [{
+        data: values,
+        backgroundColor: colors,
+        borderRadius: 3,
+        borderSkipped: false
+      }] },
+      options: {
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: c => labels[c.dataIndex] } }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 9.5 } } },
+          y: {
+            beginAtZero: true,
+            max: m.yMax,
+            grid: { color: LINE },
+            ticks: { callback: v => v + (m.unit || '') }
+          }
+        },
+        responsive: true,
+        maintainAspectRatio: false
+      }
+    });
+  }
+});
+</script>
+
+</body>
+</html>
