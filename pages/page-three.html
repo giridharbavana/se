@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashcam Spec Comparison</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    background: #f5f5f5;
+    color: #1a1a1a;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .toolbar h1 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111;
+    margin-right: 8px;
+  }
+  .toolbar-sep { flex: 1; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid #d0d0d0;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    color: #333;
+    transition: background 0.12s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: #f0f0f0; }
+  .btn.primary {
+    background: #1a1a1a;
+    color: #fff;
+    border-color: #1a1a1a;
+  }
+  .btn.primary:hover { background: #333; }
+  .btn.danger { color: #c0392b; border-color: #e0a0a0; }
+  .btn.danger:hover { background: #fff5f5; }
+
+  .undo-count {
+    font-size: 11px;
+    color: #888;
+    margin-left: -4px;
+  }
+
+  /* ── Table wrapper ── */
+  .table-wrap {
+    flex: 1;
+    overflow: auto;
+    padding: 16px;
+  }
+
+  table {
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    min-width: 100%;
+    table-layout: fixed;
+  }
+
+  /* ── Header ── */
+  thead th {
+    background: #1a1a1a;
+    color: #fff;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+    white-space: normal;
+    word-break: break-word;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    border-right: 1px solid #333;
+  }
+  thead th:first-child { border-radius: 8px 0 0 0; min-width: 110px; width: 110px; }
+  thead th:nth-child(2) { min-width: 160px; width: 160px; }
+  thead th:last-child { border-right: none; border-radius: 0 8px 0 0; }
+
+  thead th.col-header-controls {
+    padding: 4px 6px;
+    vertical-align: middle;
+  }
+
+  .col-header-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .col-header-name {
+    cursor: text;
+    min-height: 16px;
+  }
+  .col-header-name:focus {
+    outline: 1px solid #888;
+    border-radius: 2px;
+    padding: 1px 2px;
+  }
+  .col-header-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 2px;
+  }
+  .col-action-btn {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    border-radius: 3px;
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 5px;
+    cursor: pointer;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  .col-action-btn:hover { background: rgba(255,255,255,0.3); }
+  .col-action-btn.del { background: rgba(192,57,43,0.3); }
+  .col-action-btn.del:hover { background: rgba(192,57,43,0.5); }
+
+  /* ── Body rows ── */
+  tbody tr { border-bottom: 1px solid #e8e8e8; }
+  tbody tr:hover td { background: #f8f8f8; }
+  tbody tr:last-child { border-bottom: none; }
+
+  /* Category grouping */
+  td.cat-cell {
+    font-weight: 600;
+    font-size: 11px;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    vertical-align: top;
+    padding: 10px 12px;
+    border-right: 1px solid #e8e8e8;
+    background: #fafafa;
+  }
+  td.cat-cell-hidden {
+    background: #fafafa;
+    border-right: 1px solid #e8e8e8;
+  }
+
+  /* Category color bands */
+  tr[data-cat="Core imaging"] td.cat-cell,
+  tr[data-cat="Core imaging"] td.cat-cell-hidden { background: #f0f4ff; }
+  tr[data-cat="Processing & storage"] td.cat-cell,
+  tr[data-cat="Processing & storage"] td.cat-cell-hidden { background: #f0fff4; }
+  tr[data-cat="Connectivity"] td.cat-cell,
+  tr[data-cat="Connectivity"] td.cat-cell-hidden { background: #fff8f0; }
+  tr[data-cat="Power & reliability"] td.cat-cell,
+  tr[data-cat="Power & reliability"] td.cat-cell-hidden { background: #fdf0ff; }
+  tr[data-cat="Physical design"] td.cat-cell,
+  tr[data-cat="Physical design"] td.cat-cell-hidden { background: #f0fffe; }
+  tr[data-cat="Audio & extras"] td.cat-cell,
+  tr[data-cat="Audio & extras"] td.cat-cell-hidden { background: #fff0f5; }
+
+  td {
+    padding: 8px 12px;
+    border-right: 1px solid #e8e8e8;
+    vertical-align: top;
+    min-width: 140px;
+    max-width: 200px;
+    word-break: break-word;
+    line-height: 1.5;
+  }
+  td:last-child { border-right: none; }
+
+  /* Editable cells */
+  td.editable {
+    cursor: text;
+    position: relative;
+  }
+  td.editable:hover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1.5px solid #bbb;
+    border-radius: 3px;
+    pointer-events: none;
+  }
+  td.editable.editing {
+    padding: 0;
+  }
+  td.editable.editing::after { display: none; }
+
+  td textarea {
+    width: 100%;
+    min-height: 60px;
+    border: 2px solid #3b82f6;
+    border-radius: 3px;
+    padding: 7px 10px;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+    background: #fff;
+    color: #1a1a1a;
+  }
+
+  /* Row controls */
+  .row-controls {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.12s;
+    white-space: nowrap;
+  }
+  tr:hover .row-controls { opacity: 1; }
+  .row-ctrl-btn {
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 10px;
+    padding: 2px 6px;
+    cursor: pointer;
+    color: #444;
+    line-height: 1.4;
+  }
+  .row-ctrl-btn:hover { background: #e0e0e0; }
+  .row-ctrl-btn.del { color: #c0392b; border-color: #e0a0a0; }
+  .row-ctrl-btn.del:hover { background: #fff5f5; }
+
+  td.row-ctrl-cell {
+    min-width: 80px !important;
+    max-width: 80px !important;
+    width: 80px;
+    padding: 8px 6px;
+    background: transparent !important;
+    border-right: none;
+  }
+
+  /* Add-row row */
+  .add-row-tr td {
+    padding: 6px 12px;
+    border-right: none;
+    background: #fafafa;
+  }
+  .add-row-tr button {
+    background: none;
+    border: 1px dashed #bbb;
+    border-radius: 4px;
+    color: #888;
+    font-size: 12px;
+    padding: 4px 12px;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+  }
+  .add-row-tr button:hover { border-color: #666; color: #333; background: #f0f0f0; }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: #1a1a1a;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    transition: transform 0.2s;
+    z-index: 999;
+    pointer-events: none;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Spec row col */
+  td.spec-cell {
+    font-weight: 500;
+    color: #222;
+    min-width: 160px;
+    max-width: 160px;
+    background: #fafafa !important;
+    border-right: 1px solid #e0e0e0;
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>📷 Dashcam Spec Comparison</h1>
+  <button class="btn" onclick="addRow()">＋ Add Row</button>
+  <button class="btn" onclick="addColumn()">＋ Add Column</button>
+  <div class="toolbar-sep"></div>
+  <button class="btn" onclick="undoLast()" id="undoBtn" style="display:none">↩ Undo</button>
+  <button class="btn" onclick="exportCSV()">⬇ Export CSV</button>
+  <button class="btn danger" onclick="resetData()">↺ Reset to Figma</button>
+</div>
+
+<div class="table-wrap">
+  <table id="mainTable">
+    <thead id="tableHead"></thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Initial data from Figma ─────────────────────────────────────────────────
+const FIGMA_COLUMNS = [
+  'Category', 'Spec row',
+  '70mai A510', 'Viofo A129 Pro Duo 4K', '70mai A800SE\n(A800S family)',
+  'Rexing V1', 'Rexing V1/4K', 'RoadAngel Halo Pro', 'Mio SE 3K', 'Mio SE 4K'
+];
+
+const FIGMA_ROWS = [
+  ['Core imaging','Sensor model / type','Sony STARVIS 2 IMX675','Front: Sony STARVIS (IMX317) 8MP; Rear: Sony STARVIS (IMX291) 2.13MP','Sony IMX415 4K sensor (A800S)','Sony Exmor IMX323','N/A','N/A','Sony IMX662','Omnivision DCG HDR'],
+  ['Core imaging','Sensor release date','2022','2018','2019','2016','N/A','N/A','2023','2024'],
+  ['Core imaging','Max resolution & fps','2592×1944 30fps; 2560×1440 30fps HDR; 1920×1080 60fps','Front 3840×2160 30fps (max); 1920×1080 30fps','3840×2160 (4K) up to 30fps (A800S)','1920×1080 30fps (IMX323 rated)','3840×2160 30fps','2560×1440 2K QHD 30fps (typical)','1920×1080','3840×2160'],
+  ['Core imaging','Pixel size','2.0 μm','1.62 μm','1.45 μm','2.8 μm','1.62 μm','–','2.8 μm','2.0 μm'],
+  ['Core imaging','Sensor size\n(Smaller denominator is better)','1/2.8"','1/2.5"','1/2.8"','1/2.9"','1/2.5"','–','1/2.8"','1/1.8"'],
+  ['Core imaging','Field of view (FOV)','140°','130° front; 140° rear','140° front','170°','170°','140°','124.4°','130.8°'],
+  ['Core imaging','Lens aperture','F1.8','F1.8 front; F1.6 rear','F1.8','F2.0','F1.8','F2.0','F2.0','F1.6'],
+  ['Core imaging','HDR / WDR / night tech','HDR, "Super Night Vision" with STARVIS 2 (DCG Glass)','WDR, "Upgraded Super Night Vision"','Night Owl Vision, WDR','WDR night vision','WDR night vision','Super night vision (marketing)','SV2 (Staggered)','Dual Conversion Gain'],
+  ['Processing & storage','SoC / processor','N/A','Novatek NT96885','SigmaStar SSC8629O (A800S)','N/A','N/S','N/A','',''],
+  ['Processing & storage','Video codec','H.264','H.264','H.264','H.264','H.264','H.264','',''],
+  ['Processing & storage','Max microSD capacity','Up to 256 GB microSD','Up to 256 GB microSD','Up to 256 GB microSD','Up to 128 GB microSD','Up to 256 GB microSD','Up to 128 GB microSD','','Up to 512GB microSD'],
+  ['Processing & storage','Channels supported','1CH front; optional rear (dual-channel kit)','2CH (front + rear)','1CH or 2CH with RC06 rear','1CH front only','1CH front only','2CH (front + rear)','2CH (front + rear)','2CH (front + rear)'],
+  ['Connectivity','Wi-Fi generation / band','2.4 GHz 802.11 b/g/n','Dual-band 2.4/5 GHz Wi-Fi','2.4 GHz Wi-Fi','2.4 GHz Wi-Fi','2.4 GHz Wi-Fi','2.4 GHz Wi-Fi','','Wi-Fi 6E: 2.4GHz / 5GHz'],
+  ['Connectivity','Bluetooth version','Bluetooth 4.2','Optional Bluetooth emergency button (version N/A)','N/A','N/A','N/A','N/A','','Bluetooth 5.4'],
+  ['Connectivity','GPS','Built-in GPS','GPS in mount or built-in (kit-dependent)','Built-in GPS','Optional external GPS','Optional external GPS','Built-in GPS','Built-in GPS','Built-in GPS'],
+  ['Connectivity','Cloud / LTE option','Optional 4G hardwire kit for cloud features','No native LTE','No LTE (Wi-Fi/app only)','N/A','N/A','N/A','No LTE','No LTE'],
+  ['Power & reliability','Power type','Built-in Li-ion battery + external 12V','Supercapacitor','Supercapacitor','Supercapacitor','Supercapacitor','Supercapacitor','Supercapacitor','Supercapacitor'],
+  ['Power & reliability','Operating temperature','−20°C to 70°C','−10°C to 65°C','−10°C to 60°C','−10°C to 60°C','−10°C to 60°C','−20°C to 70°C','','TBC'],
+  ['Power & reliability','Parking-mode support','Yes, with hardwire kit','Buffered parking mode with hardwire kit','Smart parking mode with hardwire kit','Parking mode with hardwire kit','Parking mode with hardwire kit','Parking mode with hardwire kit','Parking mode with hardwire kit','Parking mode with hardwire kit'],
+  ['Physical design','Mount type','Adhesive mount (wedge body)','Adhesive GPS or non-GPS mount','Adhesive mount, wedge body','Adhesive mount','Adhesive mount','Adhesive mount','Adhesive mount','Adhesive mount'],
+  ['Physical design','Body size & stealth','85 × 60.5 × 37.9 mm; compact wedge','Compact body with 2" screen','3" screen, compact wedge','Small body with 2.4" screen','Similar to V1 with 4K lens','Compact front unit with small rear cam','',''],
+  ['Physical design','Cable / rear-cam connector','Proprietary connector to RC11 rear; clip-lighter or hardwire power','Proprietary rear cable; hardwire kit','Proprietary RC06 rear connector; hardwire kit','N/A','N/A','Proprietary rear cable; hardwire kit','Proprietary rear cable; hardwire kit','Proprietary rear cable; SD card'],
+  ['Audio & extras','Microphone / speaker','Built-in mic and speaker','Built-in mic and speaker','Built-in mic and speaker','Built-in mic and speaker','Built-in mic and speaker','Built-in mic and speaker','Built-in mic and speaker',''],
+  ['Audio & extras','Additional sensors','G-sensor; ADAS; motion detection','G-sensor; motion; optional Bluetooth emergency button','G-sensor; ADAS; motion detection','G-sensor; motion detection','G-sensor; motion detection','G-sensor; motion detection','G-sensor; motion detection',''],
+  ['Audio & extras','Status LEDs / screens','2" IPS screen, status LEDs','2" LCD screen, status LEDs','3" IPS screen, status LEDs','2.4" LCD screen','2.4" LCD screen','Small screen with status LEDs','2" ultra wide screen with physical buttons',''],
+];
+
+// ── State ───────────────────────────────────────────────────────────────────
+let columns, rows, history;
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('dashcam_v2');
+    if (saved) {
+      const s = JSON.parse(saved);
+      columns = s.columns;
+      rows = s.rows;
+      history = s.history || [];
+      return;
+    }
+  } catch(e) {}
+  columns = [...FIGMA_COLUMNS];
+  rows = FIGMA_ROWS.map(r => [...r]);
+  history = [];
+}
+
+function saveState() {
+  localStorage.setItem('dashcam_v2', JSON.stringify({ columns, rows, history }));
+  document.getElementById('undoBtn').style.display = history.length ? '' : 'none';
+}
+
+function pushHistory(label) {
+  history.push({ label, columns: JSON.parse(JSON.stringify(columns)), rows: JSON.parse(JSON.stringify(rows)) });
+  if (history.length > 30) history.shift();
+}
+
+function undoLast() {
+  if (!history.length) return;
+  const snap = history.pop();
+  columns = snap.columns;
+  rows = snap.rows;
+  saveState();
+  render();
+  showToast(`Undone: ${snap.label}`);
+}
+
+function resetData() {
+  if (!confirm('Reset all data back to the original Figma table? All edits will be lost.')) return;
+  pushHistory('Before reset');
+  columns = [...FIGMA_COLUMNS];
+  rows = FIGMA_ROWS.map(r => [...r]);
+  saveState();
+  render();
+  showToast('Reset to Figma data');
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function render() {
+  renderHead();
+  renderBody();
+}
+
+function renderHead() {
+  const thead = document.getElementById('tableHead');
+  thead.innerHTML = '';
+  const tr = document.createElement('tr');
+
+  columns.forEach((col, ci) => {
+    const th = document.createElement('th');
+    if (ci === 0 || ci === 1) {
+      // Fixed columns — no delete
+      const inner = document.createElement('div');
+      inner.className = 'col-header-inner';
+      const name = document.createElement('span');
+      name.className = 'col-header-name';
+      name.contentEditable = 'true';
+      name.textContent = col;
+      name.addEventListener('blur', e => {
+        pushHistory(`Rename column "${col}"`);
+        columns[ci] = e.target.textContent.trim() || col;
+        saveState();
+      });
+      inner.appendChild(name);
+      th.appendChild(inner);
+    } else {
+      th.className = 'col-header-controls';
+      const inner = document.createElement('div');
+      inner.className = 'col-header-inner';
+
+      const name = document.createElement('span');
+      name.className = 'col-header-name';
+      name.contentEditable = 'true';
+      name.textContent = col;
+      name.addEventListener('blur', e => {
+        pushHistory(`Rename column "${col}"`);
+        columns[ci] = e.target.textContent.trim() || col;
+        saveState();
+      });
+
+      const acts = document.createElement('div');
+      acts.className = 'col-header-actions';
+
+      const insL = document.createElement('button');
+      insL.className = 'col-action-btn';
+      insL.textContent = '← Insert';
+      insL.onclick = () => insertColumnAt(ci);
+
+      const insR = document.createElement('button');
+      insR.className = 'col-action-btn';
+      insR.textContent = 'Insert →';
+      insR.onclick = () => insertColumnAt(ci + 1);
+
+      const del = document.createElement('button');
+      del.className = 'col-action-btn del';
+      del.textContent = '✕ Delete';
+      del.onclick = () => deleteColumn(ci);
+
+      acts.appendChild(insL);
+      acts.appendChild(insR);
+      acts.appendChild(del);
+      inner.appendChild(name);
+      inner.appendChild(acts);
+      th.appendChild(inner);
+    }
+    tr.appendChild(th);
+  });
+
+  // Controls header
+  const thCtrl = document.createElement('th');
+  thCtrl.style.minWidth = '80px';
+  thCtrl.style.width = '80px';
+  tr.appendChild(thCtrl);
+
+  thead.appendChild(tr);
+}
+
+function renderBody() {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+
+  // Track category spans
+  let prevCat = null;
+
+  rows.forEach((row, ri) => {
+    const tr = document.createElement('tr');
+    const cat = row[0] || '';
+    tr.dataset.cat = cat;
+
+    row.forEach((cell, ci) => {
+      const td = document.createElement('td');
+      if (ci === 0) {
+        // Category cell
+        if (cat !== prevCat) {
+          td.className = 'cat-cell';
+          td.contentEditable = 'true';
+          td.textContent = cat;
+          td.addEventListener('blur', e => {
+            pushHistory(`Edit category`);
+            rows[ri][0] = e.target.textContent.trim();
+            saveState();
+            render();
+          });
+          prevCat = cat;
+        } else {
+          td.className = 'cat-cell-hidden';
+        }
+      } else if (ci === 1) {
+        td.className = 'spec-cell editable';
+        td.textContent = cell;
+        td.addEventListener('click', () => startEdit(td, ri, ci));
+      } else {
+        td.className = 'editable';
+        td.textContent = cell;
+        td.addEventListener('click', () => startEdit(td, ri, ci));
+      }
+      tr.appendChild(td);
+    });
+
+    // Row controls
+    const tdCtrl = document.createElement('td');
+    tdCtrl.className = 'row-ctrl-cell';
+    const controls = document.createElement('div');
+    controls.className = 'row-controls';
+
+    const insAbove = document.createElement('button');
+    insAbove.className = 'row-ctrl-btn';
+    insAbove.title = 'Insert row above';
+    insAbove.textContent = '↑';
+    insAbove.onclick = () => insertRowAt(ri);
+
+    const insBelow = document.createElement('button');
+    insBelow.className = 'row-ctrl-btn';
+    insBelow.title = 'Insert row below';
+    insBelow.textContent = '↓';
+    insBelow.onclick = () => insertRowAt(ri + 1);
+
+    const del = document.createElement('button');
+    del.className = 'row-ctrl-btn del';
+    del.title = 'Delete row';
+    del.textContent = '✕';
+    del.onclick = () => deleteRow(ri);
+
+    controls.appendChild(insAbove);
+    controls.appendChild(insBelow);
+    controls.appendChild(del);
+    tdCtrl.appendChild(controls);
+    tr.appendChild(tdCtrl);
+
+    tbody.appendChild(tr);
+  });
+
+  // Add-row footer
+  const addTr = document.createElement('tr');
+  addTr.className = 'add-row-tr';
+  const addTd = document.createElement('td');
+  addTd.colSpan = columns.length + 1;
+  const addBtn = document.createElement('button');
+  addBtn.textContent = '＋ Add new row';
+  addBtn.onclick = addRow;
+  addTd.appendChild(addBtn);
+  addTr.appendChild(addTd);
+  tbody.appendChild(addTr);
+}
+
+// ── Inline editing ──────────────────────────────────────────────────────────
+let activeEdit = null;
+
+function startEdit(td, ri, ci) {
+  if (activeEdit) commitEdit();
+  if (td.classList.contains('editing')) return;
+
+  const originalText = rows[ri][ci];
+  td.classList.add('editing');
+
+  const ta = document.createElement('textarea');
+  ta.value = originalText;
+  ta.style.minHeight = Math.max(td.offsetHeight - 2, 60) + 'px';
+  td.textContent = '';
+  td.appendChild(ta);
+  ta.focus();
+  ta.select();
+
+  activeEdit = { td, ri, ci, original: originalText, ta };
+
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      ta.value = originalText;
+      commitEdit(true);
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      commitEdit();
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      commitEdit();
+      // Move to next editable cell
+      const nextCi = ci + 1 < columns.length ? ci + 1 : 2;
+      const nextRi = ci + 1 < columns.length ? ri : (ri + 1 < rows.length ? ri + 1 : ri);
+      if (nextRi !== ri || nextCi !== ci) {
+        const nextTds = document.querySelectorAll('#tableBody tr:not(.add-row-tr)');
+        if (nextTds[nextRi]) {
+          const cells = nextTds[nextRi].querySelectorAll('td.editable');
+          const targetCell = cells[nextCi - (nextCi >= 2 ? 1 : 0)];
+          if (targetCell) setTimeout(() => targetCell.click(), 10);
+        }
+      }
+    }
+  });
+
+  ta.addEventListener('blur', () => setTimeout(commitEdit, 100));
+}
+
+function commitEdit(cancel = false) {
+  if (!activeEdit) return;
+  const { td, ri, ci, original, ta } = activeEdit;
+  activeEdit = null;
+
+  const newVal = ta ? ta.value : td.textContent;
+  td.classList.remove('editing');
+  td.textContent = '';
+
+  if (!cancel && newVal !== original) {
+    pushHistory(`Edit cell [${ri},${ci}]`);
+    rows[ri][ci] = newVal;
+    saveState();
+  }
+  rows[ri][ci] = cancel ? original : newVal;
+  td.textContent = rows[ri][ci];
+}
+
+// ── Add / Insert / Delete rows ───────────────────────────────────────────────
+function addRow() {
+  const lastCat = rows.length ? rows[rows.length - 1][0] : '';
+  pushHistory('Add row');
+  rows.push(Array(columns.length).fill('').map((_, i) => i === 0 ? lastCat : ''));
+  saveState();
+  render();
+  showToast('Row added');
+}
+
+function insertRowAt(index) {
+  const cat = rows[Math.min(index, rows.length - 1)]?.[0] || '';
+  pushHistory('Insert row');
+  rows.splice(index, 0, Array(columns.length).fill('').map((_, i) => i === 0 ? cat : ''));
+  saveState();
+  render();
+  showToast('Row inserted');
+}
+
+function deleteRow(ri) {
+  if (rows.length <= 1) { showToast('Cannot delete the last row'); return; }
+  pushHistory(`Delete row "${rows[ri][1]}"`);
+  rows.splice(ri, 1);
+  saveState();
+  render();
+  showToast('Row deleted');
+}
+
+// ── Add / Insert / Delete columns ────────────────────────────────────────────
+function addColumn() {
+  const name = prompt('New column name:', 'New Product');
+  if (name === null) return;
+  pushHistory('Add column');
+  columns.push(name || 'New Product');
+  rows.forEach(r => r.push(''));
+  saveState();
+  render();
+  showToast('Column added');
+}
+
+function insertColumnAt(ci) {
+  const name = prompt('New column name:', 'New Product');
+  if (name === null) return;
+  pushHistory('Insert column');
+  columns.splice(ci, 0, name || 'New Product');
+  rows.forEach(r => r.splice(ci, 0, ''));
+  saveState();
+  render();
+  showToast('Column inserted');
+}
+
+function deleteColumn(ci) {
+  if (columns.length <= 3) { showToast('Cannot delete — need at least one product column'); return; }
+  if (!confirm(`Delete column "${columns[ci]}"? All data in it will be lost.`)) return;
+  pushHistory(`Delete column "${columns[ci]}"`);
+  columns.splice(ci, 1);
+  rows.forEach(r => r.splice(ci, 1));
+  saveState();
+  render();
+  showToast('Column deleted');
+}
+
+// ── Export CSV ───────────────────────────────────────────────────────────────
+function exportCSV() {
+  const esc = v => '"' + (v || '').replace(/"/g, '""') + '"';
+  const lines = [columns.map(esc).join(',')];
+  rows.forEach(r => lines.push(r.map(esc).join(',')));
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'dashcam-specs.csv'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Exported as CSV');
+}
+
+// ── Click outside to commit ──────────────────────────────────────────────────
+document.addEventListener('mousedown', e => {
+  if (activeEdit && !activeEdit.td.contains(e.target)) commitEdit();
+});
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+loadState();
+render();
+document.getElementById('undoBtn').style.display = history.length ? '' : 'none';
+</script>
+</body>
+</html>
