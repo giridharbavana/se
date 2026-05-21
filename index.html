@@ -3,97 +3,190 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Project List</title>
+  <title>Pages</title>
   <style>
+    :root {
+      --bg: #f6f1e7;
+      --surface: #f8f3ea;
+      --line: #e7ddcf;
+      --text: #2c241c;
+      --muted: #7a6f62;
+      --soft: #b9aa97;
+      --badge-bg: #f2e8d8;
+      --badge-border: #e3d4be;
+      --badge-text: #8a6d4b;
+      --hover: #f3ebdf;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
-      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 32px 16px;
-      background: #f7f6f2;
-      color: #28251d;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
     }
 
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
+    .page {
+      min-height: 100vh;
     }
 
-    h1 {
-      margin-bottom: 12px;
+    .header {
+      padding: 10px 14px 8px;
+      border-bottom: 1px solid var(--line);
     }
 
-    p {
-      color: #666;
+    .header h1 {
+      margin: 0;
+      font-size: 21px;
+      font-weight: 700;
+      line-height: 1.2;
     }
 
     .list {
-      display: grid;
-      gap: 16px;
-      margin-top: 24px;
+      width: 100%;
     }
 
-    .item {
-      display: block;
-      padding: 20px;
-      background: #ffffff;
-      border: 1px solid #d4d1ca;
-      border-radius: 12px;
+    .row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      width: 100%;
+      padding: 14px 14px;
       text-decoration: none;
       color: inherit;
-      transition: 0.2s ease;
+      border-bottom: 1px solid var(--line);
+      transition: background-color 160ms ease;
     }
 
-    .item:hover {
-      border-color: #01696f;
-      transform: translateY(-2px);
+    .row:hover,
+    .row:focus-visible {
+      background: var(--hover);
+      outline: none;
     }
 
-    .item h2 {
-      margin: 0 0 8px;
-      font-size: 20px;
+    .badge {
+      flex: 0 0 auto;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--badge-border);
+      border-radius: 6px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      margin-top: 1px;
     }
 
-    .item p {
+    .content {
+      min-width: 0;
+    }
+
+    .title {
       margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--text);
+    }
+
+    .subtitle {
+      margin: 2px 0 0;
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--muted);
+    }
+
+    @media (max-width: 640px) {
+      .header {
+        padding: 12px 12px 10px;
+      }
+
+      .header h1 {
+        font-size: 20px;
+      }
+
+      .row {
+        padding: 12px;
+      }
+
+      .title {
+        font-size: 15px;
+      }
+
+      .subtitle {
+        font-size: 11.5px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Milo SE directory</h1>
-    <p>Tap any item to open another HTML file in this repository.</p>
+  <main class="page">
+    <header class="header">
+      <h1>Pages</h1>
+    </header>
 
-    <div class="list">
-      <a class="item" href="./pages/page-one.html">
-        <h2>Road Angel Competitor metrics</h2>
-        <p>Open page-one.html</p>
+    <section class="list" aria-label="Pages list">
+      <a class="row" href="./pages/page-one.html">
+        <span class="badge">01</span>
+        <div class="content">
+          <h2 class="title">Dashcam Comparison</h2>
+          <p class="subtitle">Core imaging, connectivity, power & design specs across 8 models</p>
+        </div>
       </a>
 
-      <a class="item" href="./pages/page-two.html">
-        <h2>Milo SE Spec comparison</h2>
-        <p>Open page-two.html</p>
+      <a class="row" href="./pages/page-two.html">
+        <span class="badge">02</span>
+        <div class="content">
+          <h2 class="title">Competitor Performance Report - Condensed</h2>
+          <p class="subtitle">Summary view with headline strengths, weaknesses and key product notes</p>
+        </div>
       </a>
 
-      <a class="item" href="./pages/page-three.html">
-        <h2>Page Three</h2>
-        <p>Open page-three.html</p>
+      <a class="row" href="./pages/page-three.html">
+        <span class="badge">03</span>
+        <div class="content">
+          <h2 class="title">Camera Feature Matrix</h2>
+          <p class="subtitle">Recording modes, parking features, app support and storage options</p>
+        </div>
       </a>
 
-      <a class="item" href="./pages/page-four.html">
-        <h2>Page Four</h2>
-        <p>Open page-four.html</p>
+      <a class="row" href="./pages/page-four.html">
+        <span class="badge">04</span>
+        <div class="content">
+          <h2 class="title">Retail Pricing Snapshot</h2>
+          <p class="subtitle">Current UK retailer pricing, bundles and stock-position notes</p>
+        </div>
       </a>
 
-      <a class="item" href="./pages/page-five.html">
-        <h2>Page Five</h2>
-        <p>Open page-five.html</p>
+      <a class="row" href="./pages/page-five.html">
+        <span class="badge">05</span>
+        <div class="content">
+          <h2 class="title">UX Review Notes</h2>
+          <p class="subtitle">Navigation, onboarding, playback flow and settings usability observations</p>
+        </div>
       </a>
 
-      <a class="item" href="./pages/page-six.html">
-        <h2>Page Six</h2>
-        <p>Open page-six.html</p>
+      <a class="row" href="./pages/page-six.html">
+        <span class="badge">06</span>
+        <div class="content">
+          <h2 class="title">Firmware Update Summary</h2>
+          <p class="subtitle">Release notes, reliability fixes and expected customer-facing changes</p>
+        </div>
       </a>
-    </div>
-  </div>
+    </section>
+  </main>
 </body>
 </html>
